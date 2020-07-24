@@ -19,8 +19,8 @@ from pathlib import Path
 def dipole_field(dip_r, dip_m, pos_r):
     """
     Compute the dipole field at the pos_r position(s), from a group of
-    particles located at the dip_r dipole_positions, and which have magnetic dipole
-    moments given in the dip_m array.
+    particles located at the dip_r dipole_positions, and which have magnetic
+    dipole moments given in the dip_m array.
 
     For these arrays, N > 1
 
@@ -187,20 +187,18 @@ class MagneticSample(object):
                           ___/___
                          /      /            Scan Grid
                    _     ______________________________
-            Sdy_ /     /       /      /       /       /__      _
-                /_    /_______/______/_______/_______/   /|     |
-                     /       /      /       /       /   / |     |
-                    / ______/______/_______/_______/   /  |     |_ Lz
-                   /       /      /       /       /   /   |     |
-               _  /_______/______/_______/_______/   /    |     |
-          Hx _|     /                O              /  O  |    _|
-              |_   /______________________________ /      /
-                  |                               |      /
-                  |                               |     /
-                  |            O                  |    /
-                  |   O                           |   /
-                  |    dipole                     |  /
-                  |                           O   | /
+            Sdy_ /     /       /      /       /       /
+                /_    /_______/______/_______/_______/__      _
+                     /       /      /       /       /   /|     |
+                    / ______/______/_______/_______/   / |     |_ Lz
+                   /       /      /       /       /   /  |     |
+               _  /_______/______/_______/_______/   /   |     |
+          Hx _|     /                O              /  O |    _|
+              |_   /______________________________ /    /
+                  |                               |    /
+                  |            O                  |   /
+                  |   O                           |  /
+                  |    dipole               O     | /
                   |_______________________________|/  Sample
     """
 
@@ -209,6 +207,12 @@ class MagneticSample(object):
     def __init__(self, Hz, Sx, Sy, Sdx, Sdy, Lx, Ly, Lz,
                  scan_origin=(0.0, 0.0)):
         """
+
+        Constructor for the sample generator class. The arguments are necessary
+        to specify the scan grid and sample dimensions.
+
+        Arguments:
+
         Hz          :: Scan height in m
         Sx          :: Scan area x - dimension in m
         Sy          :: Scan area y - dimension in m
@@ -218,6 +222,10 @@ class MagneticSample(object):
         Ly          :: Sample y - dimension in m
         Lz          :: Sample thickness in m
         scan_origin :: 2-sequence to specify origin of scan grid
+
+        Particle positions and magnetic moments must be generated using the
+        self.generate_random_particles() or
+        self.generate_particles_from_array() methods.
         """
 
         self.Hz = Hz
@@ -255,8 +263,9 @@ class MagneticSample(object):
                                   rmin=[0.1, 0.1, 0.1],
                                   rmax=[0.9, 0.9, 0.9]):
         """
-        Generate a sample of particles randomly distributed across the sample
-        region. The particle magnetizations are randomly generated
+        Generate a sample of dipole particles randomly distributed across the
+        sample region. The dipole moments of the particles are randomly
+        generated based on the saturation magnetization value Ms
 
         N_particles     :: Number of particles
         Ms              :: Saturation magnetisation
@@ -318,11 +327,15 @@ class MagneticSample(object):
         """
         Generate particles in the sample from arrays specified manually
 
-        positions       :: N x 3 array
-        magnetizations  :: N x 3 array
-        volumes         :: N x 3 array
+        positions           :: N x 3 array (m units)
+        dipole_moments      :: N x 3 array (A m^2 unitS)
+        volumes             :: N x 3 array (m^3 units)
 
-        TODO: change variable names: magnetization -> dipole_moments
+        Optional:
+
+        quadrupole_moments  :: N x 5 array with quadrupole moments
+        octupole_moments    :: N x 7 array with octupole moments
+
         """
 
         self.dipole_positions = np.array(positions)
@@ -404,11 +417,11 @@ class MagneticSample(object):
         BASEDIR = Path(basedir)
 
         if filename == 'TIME_STAMP':
-            save_fname = BASEDIR / f'MagneticSource_{self.time_stamp}'
+            save_fname = BASEDIR / f'MagneticSample_{self.time_stamp}'
             stp = self.time_stamp + '.json'
             json_fname = BASEDIR / "MetaDict_" + stp
         else:
-            save_fname = BASEDIR / f'MagneticSource_{filename}'
+            save_fname = BASEDIR / f'MagneticSample_{filename}'
             json_fname = BASEDIR / f'MetaDict_{filename}.json'
 
         if noised_array:
