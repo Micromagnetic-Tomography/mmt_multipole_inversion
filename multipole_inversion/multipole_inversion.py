@@ -1,9 +1,8 @@
 import numpy as np
-import math
 import matplotlib.pyplot as plt
 # from palettable.cartocolors.diverging import Geyser_5
 import time
-import datetime
+# import datetime
 import json
 # from scipy.special import sph_harm
 import sys
@@ -13,6 +12,8 @@ try:
     import tensorflow as tf
 except ModuleNotFoundError:
     warnings.warn('Could not import Tensorflow')
+
+from . import susceptibility_modules as sus_mods
 
 
 def dipole_field(dip_r, dip_m, pos_r):
@@ -32,110 +33,6 @@ def dipole_field(dip_r, dip_m, pos_r):
     return([f * r[k] + g * dip_m[k] for k in range(3)])
 
 
-def dipole_Bz_sus(dip_r, pos_r):
-    """
-
-    dip_r   :: N x 3 array OR 1 x 3 array
-    pos_r   :: N x 3 array OR 1 x 3 array
-
-    Returns
-
-    N x 3 array
-
-    Calculate magnetic flux Bz-susceptibility per dipole component  generated
-    by dipole
-    located in position dip_r    (m)
-    at position  pos_r           (m)
-    unit of result is T / (Am2)
-    """
-
-    dr = pos_r - dip_r
-    x, y, z = dr[:, 0], dr[:, 1], dr[:, 2]
-
-    rho2 = np.sum(dr ** 2, axis=1)
-    rho = np.sqrt(rho2)
-    f = 3e-7 / (rho2 * rho2 * rho)
-    g = -1e-7 / (rho2 * rho)
-
-    #  Only return Bz
-    return np.column_stack((f * z * x, f * z * y, f * z * z + g))
-
-
-# ORIGINAL:
-# def quadrupole_Bz_sus(dip_r, pos_r):  # see Overleaf
-#     r = [pos_r[k] - dip_r[k] for k in range(3)]
-#     rho2 = r[0] * r[0] + r[1] * r[1] + r[2] * r[2]
-#     rho = np.sqrt(rho2)
-#     p1 = 5 * r[2] * (r[0] * r[0]-r[2] * r[2]) + 2 * rho2 * r[2]
-#     p2 = 5 * r[0] * r[1] * r[2]
-#     p3 = 5 * r[0] * (r[2] * r[2] - rho2)
-#     p4 = 5 * r[2] * (r[1] * r[1]-r[2] * r[2]) + 2 * rho2 * r[2]
-#     p5 = 5 * r[1] * (r[2] * r[2] - rho2)
-#     g = 1e-7 / (rho2 * rho2 * rho2 * rho)
-#
-#     # Only return Bz
-#     return([g * p1, g * p2, g * p3, g * p4, g * p5])
-
-def quadrupole_Bz_sus(dip_r, pos_r):  # see Overleaf
-    """
-    dip_r   :: N x 3 array OR 1 x 3 array
-    pos_r   :: N x 3 array OR 1 x 3 array
-
-    Returns
-
-        N x 5  array with 5 quadrupole moments from the traceless 2-tensor
-    """
-
-    dr = pos_r - dip_r
-    x, y, z = dr[:, 0], dr[:, 1], dr[:, 2]
-
-    rho2 = np.sum(dr ** 2, axis=1)
-    rho = np.sqrt(rho2)
-
-    p1 = 5. * z * (x * x - z * z) + 2 * rho2 * z
-    p2 = 10. * x * y * z
-    p3 = 2. * x * (5 * z * z - rho2)
-    p4 = 5. * z * (y * y - z * z) + 2 * rho2 * z
-    p5 = 2. * y * (5 * z * z - rho2)
-    g = 1e-7 / (rho2 * rho2 * rho2 * rho)
-
-    # Only return Bz
-    return np.column_stack((g * p1, g * p2, g * p3, g * p4, g * p5))
-
-
-def octupole_Bz_sus(dip_r, pos_r):  # see Overleaf
-    """
-    dip_r   :: N x 3 array OR 1 x 3 array
-    pos_r   :: N x 3 array OR 1 x 3 array
-
-    Returns
-
-        N x 7  array with 7 octupole moments from the traceless 3-tensor
-    """
-
-    octp = np.zeros((dip_r.shape[0], 7))
-
-    dr = pos_r - dip_r
-    x, y, z = dr[:, 0], dr[:, 1], dr[:, 2]
-
-    rho2 = np.sum(dr ** 2, axis=1)
-    rho = np.sqrt(rho2)
-
-    octp[:, 0] = 5 * x * z * (7 * (x * x - 3 * z * z) + 6 * rho2)   # w_xxx
-    octp[:, 1] = 15 * y * z * (7 * (x * x - z * z) + 2 * rho2)      # w_xxy
-    octp[:, 2] = 5 * (7 * z * z * (3 * x * x - z * z)               # w_xxz
-                      - 3 * rho2 * (x * x - z * z))                 #
-    octp[:, 3] = 30 * x * y * (7 * z * z - rho2)                    # w_xyz
-    octp[:, 4] = 15 * x * z * (7 * (y * y - z * z) + 2 * rho2)      # w_yyx
-    octp[:, 5] = 5 * y * z * (7 * (y * y - 3 * z * z) + 6 * rho2)   # w_yyy
-    octp[:, 6] = 5 * (7 * z * z * (3 * y * y - z * z)               # w_yyz
-                      - 3 * rho2 * (y * y - z * z))                 #
-    g = 1e-7 / (rho2 * rho2 * rho2 * rho2 * rho)
-
-    # Only return Bz
-    return octp * g[:, None]
-
-
 # -----------------------------------------------------------------------------
 
 
@@ -144,7 +41,9 @@ class MultipoleInversion(object):
     """
 
     def __init__(self, sample_config_file, sample_arrays=None,
-                 expansion_limit='quadrupole', verbose=True):
+                 expansion_limit='quadrupole', verbose=True,
+                 sus_functions_module='spherical_harmonics_basis'
+                 ):
         """
         sample_config_file  ::
         sample_arrays       :: An npz file with, at least, the
@@ -154,6 +53,10 @@ class MultipoleInversion(object):
                                 magnetic particles
         verbose             ::
         """
+
+        # Set the module from which to find the Bz susceptibility functions,
+        # which is specified using the sus_functions_module argument
+        self.sus_mod = getattr(sus_mods, sus_functions_module)
 
         self._expansion_limit = None
         self.expansion_limit = expansion_limit
@@ -275,11 +178,11 @@ class MultipoleInversion(object):
             # array (N_particles x 3), compute the dipole (3 terms),
             # quadrupole (5 terms) or octupole (7 terms) contributions
             # Here we populate the corresponding columns
-            multipole_sus[:, :3] = dipole_Bz_sus(self.particle_positions, p)
+            multipole_sus[:, :3] = self.sus_mod.dipole_Bz_sus(self.particle_positions, p)
             if self.expansion_limit in ['quadrupole', 'octupole']:
-                multipole_sus[:, 3:8] = quadrupole_Bz_sus(self.particle_positions, p)
+                multipole_sus[:, 3:8] = self.sus_mod.quadrupole_Bz_sus(self.particle_positions, p)
             if self.expansion_limit in ['octupole']:
-                multipole_sus[:, 8:15] = octupole_Bz_sus(self.particle_positions, p)
+                multipole_sus[:, 8:15] = self.sus_mod.octupole_Bz_sus(self.particle_positions, p)
 
             # TODO: can use a closure to avoid the if statements, generating
             # a function that computes the necessary fields
