@@ -39,7 +39,6 @@ def dipole_Bz_sus(dip_r, pos_r):
     return np.column_stack((f * p1, f * p2, f * p3))
 
 
-# TO CHECK
 def quadrupole_Bz_sus(dip_r, pos_r):  # see Overleaf
     """
     dip_r   :: N x 3 array OR 1 x 3 array
@@ -70,7 +69,6 @@ def quadrupole_Bz_sus(dip_r, pos_r):  # see Overleaf
     return np.column_stack((g * p1, g * p2, g * p3, g * p4, g * p5))
 
 
-# TO CHECK
 def octupole_Bz_sus(dip_r, pos_r):  # see Overleaf
     """
     dip_r   :: N x 3 array OR 1 x 3 array
