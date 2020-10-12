@@ -14,6 +14,8 @@ except ModuleNotFoundError:
     warnings.warn('Could not import Tensorflow')
 
 from . import susceptibility_modules as sus_mods
+from typing import Optional
+from typing import Literal  # Working with Python >3.8
 
 
 def dipole_field(dip_r, dip_m, pos_r):
@@ -35,15 +37,23 @@ def dipole_field(dip_r, dip_m, pos_r):
 
 # -----------------------------------------------------------------------------
 
+SusOptions = Literal['spherical_harmonics_basis',
+                     'maxwell_cartesian_polynomials',
+                     'cartesian_speherical_harmonics'
+                     ]
+
 
 class MultipoleInversion(object):
     """
     """
 
-    def __init__(self, sample_config_file, sample_arrays=None,
-                 expansion_limit='quadrupole', verbose=True,
-                 sus_functions_module='spherical_harmonics_basis'
-                 ):
+    def __init__(self,
+                 sample_config_file: str,
+                 sample_arrays: Optional[str],
+                 expansion_limit: str = 'quadrupole',
+                 verbose: bool = True,
+                 sus_functions_module: SusOptions = 'spherical_harmonics_basis'
+                 ) -> None:
         """
         sample_config_file  ::
         sample_arrays       :: An npz file with, at least, the
