@@ -8,10 +8,10 @@ import json
 import sys
 import scipy.linalg as slin
 import warnings
-try:
-    import tensorflow as tf
-except ModuleNotFoundError:
-    warnings.warn('Could not import Tensorflow')
+# try:
+#     import tensorflow as tf
+# except ModuleNotFoundError:
+#     warnings.warn('Could not import Tensorflow')
 
 from . import susceptibility_modules as sus_mods
 from typing import Optional
@@ -240,10 +240,10 @@ class MultipoleInversion(object):
             if self.verbose:
                 print('Using scipy.linalg.pinv2 for inversion')
             self.IQ = slin.pinv2(self.Q, rcond=rcond, **method_kwargs)
-        elif method == 'tf_pinv':
-            if self.verbose:
-                print('Using tf.linalg.pinv for inversion')
-            self.IQ = tf.linalg.pinv(self.Q, rcond=rcond, **method_kwargs)
+        # elif method == 'tf_pinv':
+        #     if self.verbose:
+        #         print('Using tf.linalg.pinv for inversion')
+        #     self.IQ = tf.linalg.pinv(self.Q, rcond=rcond, **method_kwargs)
         else:
             raise TypeError(f'Method {method} not implemented')
 
