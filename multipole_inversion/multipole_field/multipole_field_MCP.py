@@ -1,3 +1,6 @@
+# Multipole field expressions using Maxwell Cartesian Polynomials
+#
+# 
 import numpy as np
 
 
@@ -158,6 +161,7 @@ def Br_field_quadrupole(r, theta, phi, Q1, Q2, Q3, Q4, Q5):
 
 
     TODO: Speed up the calculations vectorizing the operations!
+    TODO: Use the Cartesian function
     """
 
     # Not necessary: dip_r, pos_r
