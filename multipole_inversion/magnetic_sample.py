@@ -390,11 +390,11 @@ class MagneticSample(object):
         self.Sy_range = self.scan_origin[1] + np.arange(round(self.Sy / self.Sdy)) * self.Sdy
         Bz_grid = np.zeros((len(self.Sy_range), len(self.Sx_range)))
 
-        pos = np.ones((self.N_Points, 3))
+        pos = np.ones((Bz_grid.shape[0] * Bz_grid.shape[1], 3))
         X_pos, Y_pos = np.meshgrid(self.Sx_range, self.Sy_range)
         pos[:, :2] = np.stack((X_pos, Y_pos), axis=2).reshape(-1, 2)
         pos[:, 2] *= self.Hz
-        pos.shape = (len(self.Sy_range), len(self.Sx_range, 3))
+        pos.shape = (len(self.Sy_range), len(self.Sx_range), 3)
 
         dipole_Bz(self.dipole_positions, self.dipole_moments,
                   pos, Bz_grid, self.Sx_range, self.Sy_range)
