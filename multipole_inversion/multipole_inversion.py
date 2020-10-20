@@ -167,42 +167,29 @@ class MultipoleInversion(object):
         # Generate  forward matrix
         # Q[i, j] =
 
-        # Create the multipole contribution array and the total flux array
-        # according to the specified expansion limit
-        multipole_sus = np.zeros((self.N_particles, self._N_cols))
-        self.Q = np.zeros(shape=(self.N_Points, self._N_cols * self.N_particles))
+        # The the total flux array according to the specified expansion limit
+        self.Q = np.zeros(shape=(self.N_Points,
+                                 self._N_cols * self.N_particles))
 
         # print('pos array:', particle_positions.shape)
         t0 = time.time()
-        # TODO: replace for loop with array with all sample positions
-        for i in range(self.N_Points):
-            # Not necessary:
-            # multipole_sus[:] = 0.0
 
-            # Sweep thorugh x first, then increase y
-            ix = i % self.Nx_surf
-            iy = i // self.Nx_surf
-            p = [self.Sx_range[ix], self.Sy_range[iy], self.Hz]
+        # Create all the positions of the scan array
+        pos = np.ones((self.N_Points, 3))
+        X_pos, Y_pos = np.meshgrid(self.Sx_range, self.Sy_range)
+        pos[:, :2] = np.stack((X_pos, Y_pos), axis=2).reshape(-1, 2)
+        pos[:, 2] *= self.Hz
 
-            # For all the particles, whose positions are stored in the pos
-            # array (N_particles x 3), compute the dipole (3 terms),
-            # quadrupole (5 terms) or octupole (7 terms) contributions
-            # Here we populate the corresponding columns
-            multipole_sus[:, :3] = self.sus_mod.dipole_Bz_sus(self.particle_positions, p)
-            if self.expansion_limit in ['quadrupole', 'octupole']:
-                multipole_sus[:, 3:8] = self.sus_mod.quadrupole_Bz_sus(self.particle_positions, p)
-            if self.expansion_limit in ['octupole']:
-                multipole_sus[:, 8:15] = self.sus_mod.octupole_Bz_sus(self.particle_positions, p)
 
-            # TODO: can use a closure to avoid the if statements, generating
-            # a function that computes the necessary fields
-
-            # Stack both results to make a N_sample x 8 matrix
-            # res = np.column_stack((dipole_sus, quadrupole_sus))
-
-            # Flatten the resulting array and save it as the i-th row, which
-            # indicates one of the measurements in the surface grid
-            self.Q[i, :] += multipole_sus.reshape(-1)
+        # For all the particles, whose positions are stored in the pos array
+        # (N_particles x 3), compute the dipole (3 terms), quadrupole (5 terms)
+        # or octupole (7 terms) contributions. Here we populate the Q array
+        # using the numba-optimised susceptibility functions
+        self.sus_mod.dipole_Bz_sus(self.particle_positions, pos, self.Q, self._N_cols)
+        if self.expansion_limit in ['quadrupole', 'octupole']:
+            self.sus_mod.quadrupole_Bz_sus(self.particle_positions, pos, self.Q, self._N_cols)
+        if self.expansion_limit in ['octupole']:
+            self.sus_mod.octupole_Bz_sus(self.particle_positions, pos, self.Q, self._N_cols)
 
         t1 = time.time()
         if self.verbose:
