@@ -12,6 +12,7 @@ import warnings
 #     import tensorflow as tf
 # except ModuleNotFoundError:
 #     warnings.warn('Could not import Tensorflow')
+from pathlib import Path
 
 from . import susceptibility_modules as sus_mods
 from typing import Optional
@@ -198,6 +199,7 @@ class MultipoleInversion(object):
 
     def compute_inversion(self, method='sp_pinv2',
                           save_multipole_moments='TIME_STAMP',
+                          basedir='.',
                           rcond=1e-15,
                           **method_kwargs
                           ):
@@ -243,10 +245,11 @@ class MultipoleInversion(object):
         # print('mags:', mags.shape)
 
         if save_multipole_moments:
+            BASEDIR = Path(basedir)
             if save_multipole_moments == 'TIME_STAMP':
-                fname = f'InvMagQuad_{self.time_stamp}.npz'
+                fname = BASEDIR / f'InvMagQuad_{self.time_stamp}.npz'
             else:
-                fname = f'InvMagQuad_{save_multipole_moments}.npz'
+                fname = BASEDIR / f'InvMagQuad_{save_multipole_moments}.npz'
             np.savez(fname, self.inv_multipole_moments)
 
         # Forward field
