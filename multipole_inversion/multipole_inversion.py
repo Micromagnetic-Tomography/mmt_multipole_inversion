@@ -262,8 +262,8 @@ class MultipoleInversion(object):
 
 
 def plot_sample(Inversion, ax,
-                contours=50,
-                contourf_args={},
+                contourf_args={'levels': 50},
+                contour_args={},
                 scatter_args={'c': 'k', 's': 1},
                 imshow_args=None,
                 dimension_scale=1., data_scale=1.,
@@ -274,7 +274,7 @@ def plot_sample(Inversion, ax,
 
     if not imshow_args:
         cf = ax.contourf(Inversion.Sx_range * dms, Inversion.Sy_range * dms,
-                         Inversion.Bz_array * dds, contours,
+                         Inversion.Bz_array * dds,
                          **contourf_args)
     else:
         dx, dy = Inversion.Sdx * dms * 0.5, Inversion.Sdy * dms * 0.5
@@ -286,8 +286,13 @@ def plot_sample(Inversion, ax,
                                Inversion.Sy_range.max() * dms + dy],
                        **imshow_args)
 
-    sc = ax.scatter(Inversion.particle_positions[:, 0] * dimension_scale,
-                    Inversion.particle_positions[:, 1] * dimension_scale,
+    if contour_args:
+        ax.contour(Inversion.Sx_range * dms, Inversion.Sy_range * dms,
+                   Inversion.Bz_array * dds,
+                   **contour_args)
+
+    sc = ax.scatter(Inversion.particle_positions[:, 0] * dms,
+                    Inversion.particle_positions[:, 1] * dms,
                     **scatter_args)
     return cf, sc
 
