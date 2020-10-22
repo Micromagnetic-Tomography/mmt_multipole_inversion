@@ -286,8 +286,8 @@ def plot_sample(Inversion, ax,
                                Inversion.Sy_range.max() * dms + dy],
                        **imshow_args)
 
-    sc = ax.scatter(Inversion.particle_positions[:, 0],
-                    Inversion.particle_positions[:, 1],
+    sc = ax.scatter(Inversion.particle_positions[:, 0] * dimension_scale,
+                    Inversion.particle_positions[:, 1] * dimension_scale,
                     **scatter_args)
     return cf, sc
 
