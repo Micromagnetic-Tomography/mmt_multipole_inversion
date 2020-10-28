@@ -70,18 +70,16 @@ def quadrupole_Bz(quad_r, quad_m, pos_r, Bz_grid, Sx_range, Sy_range):
             rho2 = np.sum(r ** 2, axis=1)
             rho = np.sqrt(rho2)
 
-            q1, q2, q3, q4, q5 = (quad_m[:, i] for i in range(5))
-
-            q_field = q1 * (5 * z * (x2 - z2) + 2 * rho2 * z)
-            q_field += q2 * 10 * x * y * z
-            q_field += q3 * 2 * x * (5 * z2 - rho2)
-            q_field += q4 * (5 * z * (y2 - z2) + 2 * rho2 * z)
-            q_field += q5 * 2 * y * (5 * z2 - rho2)
+            q_field = quad_m[:, 0] * (5 * z * (x2 - z2) + 2 * rho2 * z)
+            q_field += quad_m[:, 1] * 10 * x * y * z
+            q_field += quad_m[:, 2] * 2 * x * (5 * z2 - rho2)
+            q_field += quad_m[:, 3] * (5 * z * (y2 - z2) + 2 * rho2 * z)
+            q_field += quad_m[:, 4] * 2 * y * (5 * z2 - rho2)
 
             f = 1e-7 / (rho2 * rho2 * rho2 * rho)
 
             # Only return Bz
-            Bz_grid[j, i] += f * q_field
+            Bz_grid[j, i] += np.sum(f * q_field)
 
     return None
 
@@ -113,19 +111,17 @@ def octupole_Bz(oct_r, oct_m, pos_r, Bz_grid, Sx_range, Sy_range):
             rho2 = np.sum(r ** 2, axis=1)
             rho = np.sqrt(rho2)
 
-            w1, w2, w3, w4, w5, w6, w7 = (oct_m[:, i] for i in range(7))
-
-            o_field = w1 * 5 * x * z * (7 * (x2 - 3 * z2) + 6 * rho2)
-            o_field += w2 * 15 * y * z * (7 * (x2 - z2) + 2 * rho2)
-            o_field += w3 * 5 * (7 * z2 * (3 * x2 - z2) - 3 * rho2 * (x2 - z2))
-            o_field += w4 * 30 * x * y * (7 * z2 - rho2)
-            o_field += w5 * 15 * x * z * (7 * (y2 - z2) + 2 * rho2)
-            o_field += w6 * 5 * y * z * (7 * (y2 - 3 * z2) + 6 * rho2)
-            o_field += w7 * 5 * (7 * z2 * (3 * y2 - z2) - 3 * rho2 * (y2 - z2))
+            o_field = oct_m[:, 0] * 5 * x * z * (7 * (x2 - 3 * z2) + 6 * rho2)
+            o_field += oct_m[:, 1] * 15 * y * z * (7 * (x2 - z2) + 2 * rho2)
+            o_field += oct_m[:, 2] * 5 * (7 * z2 * (3 * x2 - z2) - 3 * rho2 * (x2 - z2))
+            o_field += oct_m[:, 3] * 30 * x * y * (7 * z2 - rho2)
+            o_field += oct_m[:, 4] * 15 * x * z * (7 * (y2 - z2) + 2 * rho2)
+            o_field += oct_m[:, 5] * 5 * y * z * (7 * (y2 - 3 * z2) + 6 * rho2)
+            o_field += oct_m[:, 6] * 5 * (7 * z2 * (3 * y2 - z2) - 3 * rho2 * (y2 - z2))
 
             f = 1e-7 / (rho2 * rho2 * rho2 * rho2 * rho)
 
             # Only return Bz
-            Bz_grid += f * o_field
+            Bz_grid[j, i] += np.sum(f * o_field)
 
     return None

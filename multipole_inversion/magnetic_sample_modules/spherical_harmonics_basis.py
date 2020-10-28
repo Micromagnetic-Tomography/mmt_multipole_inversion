@@ -56,7 +56,7 @@ def quadrupole_Bz(quad_r, quad_m, pos_r, Bz_grid, Sx_range, Sy_range):
     For these arrays, N > 1
 
     quad_r   :: N x 3 array with point quadrupole positions (m)
-    quad_m   :: N x 3 array with quadrupole moments (A m)
+    quad_m   :: N x 3 array with quadrupole moments (A m^2)
     pos_r    :: 1 x 3 array (m)
 
     Returns
@@ -74,19 +74,16 @@ def quadrupole_Bz(quad_r, quad_m, pos_r, Bz_grid, Sx_range, Sy_range):
             rho2 = np.sum(r ** 2, axis=1)
             rho = np.sqrt(rho2)
 
-            q1, q2, q3, q4, q5 = (quad_m[:, i] for i in range(5))
-
             # Quad Field from the Cart version of Quad field SHs, by Stone etal
             f = 1e-7 / (rho2 * rho2 * rho2 * rho)
-            q_field = 0.0
-            q_field += q1 * np.sqrt(3 / 2) * z * (-3 * rho2 + 5 * z2)
-            q_field += q2 * -np.sqrt(2) * x * (rho2 - 5 * z2)
-            q_field += q3 * -np.sqrt(2) * y * (rho2 - 5 * z2)
-            q_field += q4 * (5 / np.sqrt(2)) * (x2 - y2) * z
-            q_field += q5 * 5 * np.sqrt(2) * x * y * z
+            q_field = quad_m[:, 0] * np.sqrt(3 / 2) * z * (-3 * rho2 + 5 * z2)
+            q_field += quad_m[:, 1] * -np.sqrt(2) * x * (rho2 - 5 * z2)
+            q_field += quad_m[:, 2] * -np.sqrt(2) * y * (rho2 - 5 * z2)
+            q_field += quad_m[:, 3] * (5 / np.sqrt(2)) * (x2 - y2) * z
+            q_field += quad_m[:, 4] * 5 * np.sqrt(2) * x * y * z
 
             # Only return Bz
-            Bz_grid[j, i] += f * q_field
+            Bz_grid[j, i] += np.sum(f * q_field)
 
     return None
 
@@ -102,7 +99,7 @@ def octupole_Bz(oct_r, oct_m, pos_r, Bz_grid, Sx_range, Sy_range):
     For these arrays, N > 1
 
     oct_r   :: N x 3 array with point octupole positions (m)
-    oct_m   :: N x 3 array with octupole moments (A m)
+    oct_m   :: N x 3 array with octupole moments (A m^3)
     pos_r    :: N x 3 array OR 1 x 3 array (m)
 
     Returns
@@ -118,20 +115,17 @@ def octupole_Bz(oct_r, oct_m, pos_r, Bz_grid, Sx_range, Sy_range):
             rho2 = np.sum(r ** 2, axis=1)
             rho = np.sqrt(rho2)
 
-            w1, w2, w3, w4, w5, w6, w7 = (oct_m[:, i] for i in range(7))
-
             f = 1e-7 / (rho2 * rho2 * rho2 * rho2 * rho)
 
-            o_field = 0.0
-            o_field += w1 * (3 * (rho2 ** 2) - 30 * rho2 * z2 + 35 * (z2 * z2)) / np.sqrt(10)
-            o_field += w2 * np.sqrt(15) * x * z * (-3 * rho2 + 7 * z2) / 2
-            o_field += w3 * np.sqrt(15) * y * z * (-3 * rho2 + 7 * z2) / 2
-            o_field += w4 * -np.sqrt(1.5) * (x2 - y2) * (rho2 - 7 * z2)
-            o_field += w5 * -np.sqrt(6) * x * y * (rho2 - 7 * z2)
-            o_field += w6 * 7 * x * (x2 - 3 * y2) * z / 2
-            o_field += w7 * -7 * y * (-3 * x2 + y2) * z / 2
+            o_field = oct_m[:, 0] * (3 * (rho2 ** 2) - 30 * rho2 * z2 + 35 * (z2 * z2)) / np.sqrt(10)
+            o_field += oct_m[:, 1] * np.sqrt(15) * x * z * (-3 * rho2 + 7 * z2) / 2
+            o_field += oct_m[:, 2] * np.sqrt(15) * y * z * (-3 * rho2 + 7 * z2) / 2
+            o_field += oct_m[:, 3] * -np.sqrt(1.5) * (x2 - y2) * (rho2 - 7 * z2)
+            o_field += oct_m[:, 4] * -np.sqrt(6) * x * y * (rho2 - 7 * z2)
+            o_field += oct_m[:, 5] * 7 * x * (x2 - 3 * y2) * z / 2
+            o_field += oct_m[:, 6] * -7 * y * (-3 * x2 + y2) * z / 2
 
             # Only return Bz
-            Bz_grid += f * o_field
+            Bz_grid[j, i] += np.sum(f * o_field)
 
     return None
