@@ -95,11 +95,11 @@ def quadrupole_Bz_sus(dip_r, pos_r, Q, n_col_stride):  # see Overleaf
         p5 = 2. * y * (5 * z * z - r2)
 
         # Fill the Q array in the corresponding entries for the quad moments
-        Q[i][3::n_col_stride] = np.multiply(g, p1, out=p1)
-        Q[i][4::n_col_stride] = np.multiply(g, p2, out=p2)
-        Q[i][5::n_col_stride] = np.multiply(g, p3, out=p3)
-        Q[i][6::n_col_stride] = np.multiply(g, p4, out=p4)
-        Q[i][7::n_col_stride] = np.multiply(g, p5, out=p5)
+        Q[i][3::n_col_stride] = g * p1
+        Q[i][4::n_col_stride] = g * p2
+        Q[i][5::n_col_stride] = g * p3
+        Q[i][6::n_col_stride] = g * p4
+        Q[i][7::n_col_stride] = g * p5
 
     return None
 
@@ -136,12 +136,12 @@ def octupole_Bz_sus(dip_r, pos_r, Q, n_col_stride):
                           - 3 * r2 * (y * y - z * z))                 #
 
         # Fill the Q array using n_col_stride = 8
-        Q[i][8::n_col_stride] = np.multiply(g, octp[:, 0], out=octp[:, 0])
-        Q[i][9::n_col_stride] = np.multiply(g, octp[:, 1], out=octp[:, 1])
-        Q[i][10::n_col_stride] = np.multiply(g, octp[:, 2], out=octp[:, 2])
-        Q[i][11::n_col_stride] = np.multiply(g, octp[:, 3], out=octp[:, 3])
-        Q[i][12::n_col_stride] = np.multiply(g, octp[:, 4], out=octp[:, 4])
-        Q[i][13::n_col_stride] = np.multiply(g, octp[:, 5], out=octp[:, 5])
-        Q[i][14::n_col_stride] = np.multiply(g, octp[:, 6], out=octp[:, 6])
+        Q[i][8::n_col_stride] = g * octp[:, 0]
+        Q[i][9::n_col_stride] = g * octp[:, 1]
+        Q[i][10::n_col_stride] = g * octp[:, 2]
+        Q[i][11::n_col_stride] = g * octp[:, 3]
+        Q[i][12::n_col_stride] = g * octp[:, 4]
+        Q[i][13::n_col_stride] = g * octp[:, 5]
+        Q[i][14::n_col_stride] = g * octp[:, 6]
 
     return None
