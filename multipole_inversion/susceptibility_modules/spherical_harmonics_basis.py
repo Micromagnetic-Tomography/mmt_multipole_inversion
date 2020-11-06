@@ -81,7 +81,7 @@ def dipole_Bz_sus(dip_r, pos_r, Q, n_col_stride):
 
 
 @numba.jit(nopython=True)
-def quadrupole_Bz_sus(dip_r, pos_r, Q, n_col_stride):  # see Overleaf
+def quadrupole_Bz_sus(dip_r, pos_r, Q, n_col_stride):
     """
     This function generates the quadrupolar Bz susceptibility field contributed
     from magnetic point sources over different positions of a scan grid. The
@@ -124,7 +124,7 @@ def quadrupole_Bz_sus(dip_r, pos_r, Q, n_col_stride):  # see Overleaf
         p4 = g * (5 / np.sqrt(2)) * (x2 - y2) * z
         p5 = g * 5 * np.sqrt(2) * x * y * z
 
-        #  Only return Bz
+        # Fill the Q array in the corresponding entries
         Q[i][3::n_col_stride] = p1
         Q[i][4::n_col_stride] = p2
         Q[i][5::n_col_stride] = p3
@@ -138,7 +138,7 @@ def quadrupole_Bz_sus(dip_r, pos_r, Q, n_col_stride):  # see Overleaf
 
 
 @numba.jit(nopython=True)
-def octupole_Bz_sus(dip_r, pos_r, Q, n_col_stride):  # see Overleaf
+def octupole_Bz_sus(dip_r, pos_r, Q, n_col_stride):
     """
     This function generates the octupolar Bz susceptibility field contributed
     from magnetic point sources over different positions of a scan grid. The
@@ -185,7 +185,7 @@ def octupole_Bz_sus(dip_r, pos_r, Q, n_col_stride):  # see Overleaf
         octp[:, 5] = 7 * x * (x2 - 3 * y2) * z / 2
         octp[:, 6] = -7 * y * (-3 * x2 + y2) * z / 2
 
-        #  Only return Bz
+        # Fill the Q array using n_col_stride = 8
         Q[i][8::n_col_stride] = g * octp[:, 0]
         Q[i][9::n_col_stride] = g * octp[:, 1]
         Q[i][10::n_col_stride] = g * octp[:, 2]

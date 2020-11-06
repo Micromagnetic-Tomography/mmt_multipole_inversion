@@ -42,6 +42,7 @@ SusOptions = Literal['spherical_harmonics_basis',
                      'maxwell_cartesian_polynomials',
                      'cartesian_speherical_harmonics'
                      ]
+ExpOptions = Literal['dipole', 'quadrupole', 'octupole']
 
 
 class MultipoleInversion(object):
@@ -50,8 +51,8 @@ class MultipoleInversion(object):
 
     def __init__(self,
                  sample_config_file: str,
-                 sample_arrays: Optional[str],
-                 expansion_limit: str = 'quadrupole',
+                 sample_arrays: Optional[str],  # TODO: set to npz file
+                 expansion_limit: ExpOptions = 'quadrupole',
                  verbose: bool = True,
                  sus_functions_module: SusOptions = 'spherical_harmonics_basis'
                  ) -> None:
@@ -77,6 +78,8 @@ class MultipoleInversion(object):
         self.verbose = verbose
 
         expected_arrays = ['Bz_array', 'particle_positions']
+        self.Bz_array = None
+        self.particle_positions = None
 
         # Any other array in the NPZ file will be loaded here
         if sample_arrays:
@@ -84,10 +87,11 @@ class MultipoleInversion(object):
             for key, value in data.items():
                 setattr(self, key, value)
 
-        for key in expected_arrays:
-            if key not in data.keys():
-                if self.verbose:
-                    print(f'*{key}* array required for calculations. Set manually.')
+            for key in expected_arrays:
+                if key not in data.keys():
+                    if self.verbose:
+                        print(f'*{key}* array required for calculations. '
+                              ' Set manually.')
 
         # Optional sequence to set the origin of scan positions
         self.scan_origin = (0.0, 0.0)
@@ -181,16 +185,18 @@ class MultipoleInversion(object):
         pos[:, :2] = np.stack((X_pos, Y_pos), axis=2).reshape(-1, 2)
         pos[:, 2] *= self.Hz
 
-
         # For all the particles, whose positions are stored in the pos array
         # (N_particles x 3), compute the dipole (3 terms), quadrupole (5 terms)
         # or octupole (7 terms) contributions. Here we populate the Q array
         # using the numba-optimised susceptibility functions
-        self.sus_mod.dipole_Bz_sus(self.particle_positions, pos, self.Q, self._N_cols)
+        self.sus_mod.dipole_Bz_sus(self.particle_positions, pos,
+                                   self.Q, self._N_cols)
         if self.expansion_limit in ['quadrupole', 'octupole']:
-            self.sus_mod.quadrupole_Bz_sus(self.particle_positions, pos, self.Q, self._N_cols)
+            self.sus_mod.quadrupole_Bz_sus(self.particle_positions, pos,
+                                           self.Q, self._N_cols)
         if self.expansion_limit in ['octupole']:
-            self.sus_mod.octupole_Bz_sus(self.particle_positions, pos, self.Q, self._N_cols)
+            self.sus_mod.octupole_Bz_sus(self.particle_positions, pos,
+                                         self.Q, self._N_cols)
 
         t1 = time.time()
         if self.verbose:
