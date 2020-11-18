@@ -58,7 +58,8 @@ class MultipoleInversion(object):
                  ) -> None:
         """
         sample_config_file  ::
-        sample_arrays       :: An npz file with, at least, the
+        sample_arrays       :: An npz file with, at least, the scan signal Bz
+                               and the particle positions (magnetic sources)
         expansion_limit     :: 'dipole', 'quadrupole', 'octupole'
                                 Higher order multipole term to compute the
                                 field contribution from the potential of the
@@ -179,23 +180,25 @@ class MultipoleInversion(object):
         # print('pos array:', particle_positions.shape)
         t0 = time.time()
 
-        # Create all the positions of the scan array
-        pos = np.ones((self.N_Points, 3))
+        # Create all the positions of the scan grid
+        scan_positions = np.ones((self.N_Points, 3))
         X_pos, Y_pos = np.meshgrid(self.Sx_range, self.Sy_range)
-        pos[:, :2] = np.stack((X_pos, Y_pos), axis=2).reshape(-1, 2)
-        pos[:, 2] *= self.Hz
+        scan_positions[:, :2] = np.stack((X_pos, Y_pos), axis=2).reshape(-1, 2)
+        scan_positions[:, 2] *= self.Hz
 
         # For all the particles, whose positions are stored in the pos array
         # (N_particles x 3), compute the dipole (3 terms), quadrupole (5 terms)
         # or octupole (7 terms) contributions. Here we populate the Q array
         # using the numba-optimised susceptibility functions
-        self.sus_mod.dipole_Bz_sus(self.particle_positions, pos,
+        self.sus_mod.dipole_Bz_sus(self.particle_positions, scan_positions,
                                    self.Q, self._N_cols)
         if self.expansion_limit in ['quadrupole', 'octupole']:
-            self.sus_mod.quadrupole_Bz_sus(self.particle_positions, pos,
+            self.sus_mod.quadrupole_Bz_sus(self.particle_positions,
+                                           scan_positions,
                                            self.Q, self._N_cols)
         if self.expansion_limit in ['octupole']:
-            self.sus_mod.octupole_Bz_sus(self.particle_positions, pos,
+            self.sus_mod.octupole_Bz_sus(self.particle_positions,
+                                         scan_positions,
                                          self.Q, self._N_cols)
 
         t1 = time.time()
