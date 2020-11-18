@@ -140,8 +140,8 @@ class MagneticSample(object):
         self.time_stamp = datetime.datetime.fromtimestamp(ts).strftime(
                 '%Y%m%d-%H%M%S')
 
-        # Set dictionary --> Maybe use a gettatr and a list of variables:
-        # for i in self._metadict: getattr(self, i)
+        # Set dictionary entries with values as corresponding class attrs
+        # A metadict can be generated using the self.get_metadict() method
         self._metadict = {}
         self._metadict["Scan height Hz"] = 'Hz'
         self._metadict["Scan area x-dimension Sx"] = 'Sx'
@@ -162,6 +162,13 @@ class MagneticSample(object):
         self.bz_field_mod = getattr(ms_mods, bz_field_module)
 
     def get_metadict(self):
+        """
+        Generate a dictionary with the keys defined in the self._metadict
+        variable. Values are obtained by calling the class instance attributes
+        defined in the self._metadict values.  Because scan origin is a
+        sequence, it is split in x and y components.
+        This method is used to export sample properties as a json file.
+        """
         metadict = {}
         for k in self._metadict:
             if k == 'Scan origin':
