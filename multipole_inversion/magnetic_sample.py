@@ -140,14 +140,19 @@ class MagneticSample(object):
         self.time_stamp = datetime.datetime.fromtimestamp(ts).strftime(
                 '%Y%m%d-%H%M%S')
 
-        # Set dictionary
-        self.metadict = {}
-        self.metadict["Scan height Hz"] = self.Hz
-        self.metadict["Scan area x-dimension Sx"] = self.Sx
-        self.metadict["Scan area y-dimension Sy"] = self.Sy
-        self.metadict["Scan x-step Sdx"] = self.Sdx
-        self.metadict["Scan y-step Sdy"] = self.Sdy
-        self.metadict["Time stamp"] = self.time_stamp
+        # Set dictionary --> Maybe use a gettatr and a list of variables:
+        # for i in self._metadict: getattr(self, i)
+        self._metadict = {}
+        self._metadict["Scan height Hz"] = 'Hz'
+        self._metadict["Scan area x-dimension Sx"] = 'Sx'
+        self._metadict["Scan area y-dimension Sy"] = 'Sy'
+        self._metadict["Scan x-step Sdx"] = 'Sdx'
+        self._metadict["Scan y-step Sdy"] = 'Sdy'
+        self._metadict["Time stamp"] = 'time_stamp'
+        self._metadict["Scan origin"] = 'scan_origin'
+        # self._metadict["Scan origin x"] = 'scan_origin[0]'
+        # self._metadict["Scan origin y"] = self.scan_origin[1]
+        self._metadict["Number of particles"] = 'N_particles'
 
         # TEMPORARY: set higher order moments as zero
         self.quadrupole_moments = None
@@ -155,6 +160,16 @@ class MagneticSample(object):
 
         # Load the Bz field functions according to the chosen basis
         self.bz_field_mod = getattr(ms_mods, bz_field_module)
+
+    def get_metadict(self):
+        metadict = {}
+        for k in self._metadict:
+            if k == 'Scan origin':
+                metadict[k + ' x'] = getattr(self, self._metadict[k])[0]
+                metadict[k + ' y'] = getattr(self, self._metadict[k])[1]
+            else:
+                metadict[k] = getattr(self, self._metadict[k])
+        return metadict
 
     def generate_random_particles(self, N_particles=100, Ms=4.8e5, seed=42,
                                   rmin=[0.1, 0.1, 0.1],
@@ -184,7 +199,6 @@ class MagneticSample(object):
 
         self.Ms = Ms
         self.N_particles = N_particles
-        self.metadict["Number of particles"] = N_particles
 
         rnd = rstate.rand(self.N_particles, 3)
         self.dipole_positions = np.zeros_like(rnd)
@@ -247,7 +261,6 @@ class MagneticSample(object):
         self.volumes = volumes
 
         self.N_particles = len(positions)
-        self.metadict["Number of particles"] = self.N_particles
 
     def generate_measurement_mesh(self):
         """
@@ -342,8 +355,9 @@ class MagneticSample(object):
         # np.savetxt("Vol_array" + st, np.array(self.volumes),
         #            delimiter=",", fmt='%.8e')
 
+        metadict = self.get_metadict()  # Generate dic with the sample props
         with open(json_fname, 'w') as f:
-            json.dump(self.metadict, f)
+            json.dump(metadict, f)
 
     def plot_sample(self, ax,
                     contours=30,
