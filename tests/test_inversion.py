@@ -28,7 +28,9 @@ def fw_model_fun():
                                 )
 
     # Manually set the positions and magnetization of the two dipoles
-    dipole_positions = np.array([[sample.Lx * 0.5, sample.Ly * 0.5, -sample.Lz * 0.5]])
+    dipole_positions = np.array([[sample.Lx * 0.5,
+                                  sample.Ly * 0.5,
+                                  -sample.Lz * 0.5]])
 
     Ms = 1e5
     orientation = np.array([1., 0., 1.])
@@ -46,7 +48,7 @@ def fw_model_fun():
     sample.save_data(filename='fw_model_test_inversion', basedir=TEST_SAVEDIR)
 
 
-def test_inversion_single_dipole():
+def test_inversion_single_dipole(limit='dipole'):
 
     # Generate arrays from the Forward model using a single dipole source
     fw_model_fun()
@@ -54,7 +56,7 @@ def test_inversion_single_dipole():
     inv_model = minv.MultipoleInversion(
             TEST_SAVEDIR / 'MetaDict_fw_model_test_inversion.json',
             TEST_SAVEDIR / 'MagneticSample_fw_model_test_inversion.npz',
-            expansion_limit='quadrupole',
+            expansion_limit=limit,
             sus_functions_module='spherical_harmonics_basis'
             )
     inv_model.generate_measurement_mesh()
@@ -65,11 +67,19 @@ def test_inversion_single_dipole():
     orientation /= np.linalg.norm(orientation)
     expected_magnetization = Ms * (1 * 1e-18) * orientation
 
-    # print(inv_model.inv_multipole_moments[0])
+    # Compare the inverted dipole moments from the theoretical value by
+    # analyzing the relative error
     for i in range(3):
-        assert abs(expected_magnetization[i] -
-                   inv_model.inv_multipole_moments[0][i]) < 1e-22
+        rel_diff = abs(inv_model.inv_multipole_moments[0][i] -
+                       expected_magnetization[i])
+        if expected_magnetization[i] > 0:
+            rel_diff /= abs(expected_magnetization[i])
+        # print(rel_diff)
+        # print(inv_model.inv_multipole_moments[0][i])
+        assert rel_diff < 1e-6
 
 
 if __name__ == '__main__':
-    test_inversion_single_dipole()
+    test_inversion_single_dipole(limit='dipole')
+    test_inversion_single_dipole(limit='quadrupole')
+    test_inversion_single_dipole(limit='octupole')
