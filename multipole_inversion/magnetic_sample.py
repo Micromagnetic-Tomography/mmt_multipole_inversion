@@ -311,10 +311,10 @@ class MagneticSample(object):
         Update the seed if necessar.
         For the seed a random number generator can be passed instead of an int.
         """
-        if type(seed) == np.random.mtrand.RandomState:
+        if type(seed) == np.random.mtrand.Generator:
             rstate = seed
         else:
-            rstate = np.random.RandomState(seed)
+            rstate = np.random.Generator(seed)
         noise = rstate.normal(loc=0.0, scale=std_dev, size=self.Bz_array.shape)
         self.Bz_array_noised = np.copy(self.Bz_array) + noise
 
