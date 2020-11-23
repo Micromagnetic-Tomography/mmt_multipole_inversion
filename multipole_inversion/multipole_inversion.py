@@ -207,8 +207,6 @@ class MultipoleInversion(object):
         # print('Q shape:', Q.shape)
 
     def compute_inversion(self, method='sp_pinv2',
-                          save_multipole_moments='TIME_STAMP',
-                          basedir='.',
                           rcond=1e-15,
                           **method_kwargs
                           ):
@@ -253,18 +251,22 @@ class MultipoleInversion(object):
         self.inv_multipole_moments.shape = (self.N_particles, self._N_cols)
         # print('mags:', mags.shape)
 
-        if save_multipole_moments:
-            BASEDIR = Path(basedir)
-            if save_multipole_moments == 'TIME_STAMP':
-                fname = BASEDIR / f'InvMagQuad_{self.time_stamp}.npz'
-            else:
-                fname = BASEDIR / f'InvMagQuad_{save_multipole_moments}.npz'
-            np.savez(fname, self.inv_multipole_moments)
-
         # Forward field
         self.inv_Bz_array = np.matmul(self.Q,
                                       self.inv_multipole_moments.reshape(-1))
         self.inv_Bz_array.shape = (self.Ny_surf, -1)
+
+    def save_multipole_moments(self, save_name='TIME_STAMP', basedir='.'):
+        """
+        Save the multipole values computed from the inversion using
+        the self.compute_inversion method.
+        """
+        BASEDIR = Path(basedir)
+        if save_name == 'TIME_STAMP':
+            fname = BASEDIR / f'InvMagQuad_{self.time_stamp}.npz'
+        else:
+            fname = BASEDIR / f'InvMagQuad_{save_name}.npz'
+        np.savez(fname, inv_multipole_moments=self.inv_multipole_moments)
 
 
 # PLOTS -----------------------------------------------------------------------
