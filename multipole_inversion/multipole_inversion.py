@@ -215,7 +215,7 @@ class MultipoleInversion(object):
 
         method      :: The numerical method to perform the inversion. Options:
 
-                       np_pinv2 -> Numpy's pinv2
+                       np_pinv  -> Numpy's pinv
                        sp_pinv  -> Scipy's pinv (not recommended -> memory issues)
                        sp_pinv2 -> Scipy's pinv2
         """
