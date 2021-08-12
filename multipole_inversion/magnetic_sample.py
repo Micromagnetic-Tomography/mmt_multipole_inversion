@@ -308,7 +308,7 @@ class MagneticSample(object):
         """
         Add uncorrelated noise to the magnetic flux (Bz array). The new
         array is stored in self.Bz_array_noised
-        Update the seed if necessar.
+        Update the seed if necessary.
         For the seed a random number generator can be passed instead of an int.
         """
         if type(seed) == np.random.mtrand.RandomState:
