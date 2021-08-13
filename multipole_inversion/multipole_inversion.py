@@ -283,11 +283,11 @@ class MultipoleInversion(object):
             fname = BASEDIR / f'InvMagQuad_{save_name}.npz'
 
         if std:
-            std_array = np.sqrt(np.diag(self.covariance)).reshape(self.N_particles, -1)
+            self.std = np.sqrt(np.diag(self.covariance)).reshape(self.N_particles, -1)
             np.savez(
                 fname,
                 inv_multipole_moments=self.inv_multipole_moments,
-                standard_deviation=std_array)
+                standard_deviation=self.std)
         else:
             np.savez(fname, inv_multipole_moments=self.inv_multipole_moments)
 
