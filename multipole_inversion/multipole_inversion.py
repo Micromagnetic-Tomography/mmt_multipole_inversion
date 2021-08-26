@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 # from palettable.cartocolors.diverging import Geyser_5
 import time
 # import datetime
@@ -7,7 +6,7 @@ import json
 # from scipy.special import sph_harm
 import sys
 import scipy.linalg as slin
-import warnings
+# import warnings
 # try:
 #     import tensorflow as tf
 # except ModuleNotFoundError:
@@ -17,6 +16,7 @@ from pathlib import Path
 from . import susceptibility_modules as sus_mods
 from typing import Optional
 from typing import Literal  # Working with Python >3.8
+from . import plot_tools as pt
 
 
 def dipole_field(dip_r, dip_m, pos_r):
@@ -270,7 +270,8 @@ class MultipoleInversion(object):
 
 
 # PLOTS -----------------------------------------------------------------------
-
+# These functions have been moved to the plot_tools module but will be left
+# here (for a while) for compatibility
 
 def plot_sample(Inversion, ax,
                 contourf_args={'levels': 50},
@@ -280,31 +281,17 @@ def plot_sample(Inversion, ax,
                 dimension_scale=1., data_scale=1.,
                 ):
 
-    dms = dimension_scale
-    dds = data_scale
-
-    if not imshow_args:
-        cf = ax.contourf(Inversion.Sx_range * dms, Inversion.Sy_range * dms,
-                         Inversion.Bz_array * dds,
-                         **contourf_args)
-    else:
-        dx, dy = Inversion.Sdx * dms * 0.5, Inversion.Sdy * dms * 0.5
-        cf = ax.imshow(Inversion.Bz_array * dds,
-                       origin='lower',
-                       extent=[Inversion.Sx_range.min() * dms - dx,
-                               Inversion.Sx_range.max() * dms + dx,
-                               Inversion.Sy_range.min() * dms - dy,
-                               Inversion.Sy_range.max() * dms + dy],
-                       **imshow_args)
-
-    if contour_args:
-        ax.contour(Inversion.Sx_range * dms, Inversion.Sy_range * dms,
-                   Inversion.Bz_array * dds,
-                   **contour_args)
-
-    sc = ax.scatter(Inversion.particle_positions[:, 0] * dms,
-                    Inversion.particle_positions[:, 1] * dms,
-                    **scatter_args)
+    cf, sc = pt.plot_sample(ax,
+                            Inversion.Bz_array,
+                            Inversion.Sx_range, Inversion.Sy_range,
+                            Inversion.Sdx, Inversion.Sdy,
+                            Inversion.particle_positions,
+                            contourf_args=contourf_args,
+                            contour_args=contour_args,
+                            scatter_args=scatter_args,
+                            imshow_args=imshow_args,
+                            dimension_scale=dimension_scale,
+                            data_scale=data_scale)
     return cf, sc
 
 
@@ -317,43 +304,20 @@ def plot_inversion_Bz(Inversion, ax, contours=20, contourlines=10,
                       contour_args={'colors': 'k', 'linewidths': .2},
                       scatter_args={'c': 'k'}
                       ):
-    """
-    Given a matplotlib axis, plot the inverted field Bz on it, and the
-    positions of the particles
 
-    Optional:
-
-        If imshow_args is specified, this functions uses imshow instead
-        of contourf to plot the colored background with Bz_array. In this
-        case, all the contourf args are ignored
-    """
-
-    dms = dimension_scale
-    dds = data_scale
-
-    # plt.imshow(computed_FF.reshape(100, 101))
-    # plt.colorbar()
-    if not imshow_args:
-        cf = ax.contourf(Inversion.Sx_range * dms, Inversion.Sy_range * dms,
-                         Inversion.inv_Bz_array * dds, levels=contours,
-                         **contourf_args)
-    else:
-        dx, dy = 0.5 * Inversion.Sdx * dms, 0.5 * Inversion.Sdy * dms
-        cf = ax.imshow(Inversion.inv_Bz_array * dds,
-                       origin='lower',
-                       extent=[Inversion.Sx_range.min() * dms - dx,
-                               Inversion.Sx_range.max() * dms + dx,
-                               Inversion.Sy_range.min() * dms - dy,
-                               Inversion.Sy_range.max() * dms + dy],
-                       **imshow_args)
-
-    c1 = ax.contour(Inversion.Sx_range * dms, Inversion.Sy_range * dms,
-                    Inversion.inv_Bz_array * dds, levels=contourlines,
-                    **contour_args)
-    c2 = ax.scatter(Inversion.particle_positions[:, 0] * dms,
-                    Inversion.particle_positions[:, 1] * dms,
-                    **scatter_args)
-    # plt.savefig(f'FORWARD_scanning_array_{ts}.pdf', bbox_inches='tight')
+    contour_args_mod = {**contour_args, 'levels': contourlines}
+    contourf_args_mod = {**contourf_args, 'levels': contours}
+    cf, c1, c2 = pt.plot_inversion_Bz(ax,
+                                      Inversion.inv_Bz_array,
+                                      Inversion.Sx_range, Inversion.Sy_range,
+                                      Inversion.Sdx, Inversion.Sdy,
+                                      Inversion.particle_positions,
+                                      dimension_scale=dimension_scale,
+                                      data_scale=data_scale,
+                                      imshow_args=imshow_args,
+                                      contourf_args=contourf_args_mod,
+                                      contour_args=contour_args_mod,
+                                      scatter_args=scatter_args)
 
     return cf, c1, c2
 
@@ -365,29 +329,17 @@ def plot_difference_Bz(Inversion, ax, contours=50,
                        scatter_args={'c': 'k', 's': 1}
                        ):
 
-    dms = dimension_scale
-    dds = data_scale
-
-    # plt.imshow((computed_FF - Bz_Data).reshape(100, 101))
-    if not imshow_args:
-        cf = ax.contourf(Inversion.Sx_range * dms, Inversion.Sy_range * dms,
-                         (Inversion.inv_Bz_array - Inversion.Bz_array) * dds,
-                         contours,
-                         **contourf_args)
-    else:
-        dx, dy = 0.5 * Inversion.Sdx * dms, 0.5 * Inversion.Sdy * dms
-        cf = ax.imshow((Inversion.inv_Bz_array - Inversion.Bz_array) * dds,
-                       origin='lower',
-                       extent=[Inversion.Sx_range.min() * dms - dx,
-                               Inversion.Sx_range.max() * dms + dx,
-                               Inversion.Sy_range.min() * dms - dy,
-                               Inversion.Sy_range.max() * dms + dy],
-                       **imshow_args)
-
-    c1 = ax.scatter(Inversion.particle_positions[:, 0] * dms,
-                    Inversion.particle_positions[:, 1] * dms,
-                    **scatter_args)
-    # plt.savefig(f'ERROR_scanning_array_{ts}.pdf', bbox_inches='tight')
-    # plt.show()
+    contourf_args_mod = {**contourf_args, 'levels': contours}
+    cf, c1 = pt.plot_difference_Bz(ax,
+                                   Inversion.Bz_array, Inversion.inv_Bz_array,
+                                   Inversion.Sx_range, Inversion.Sy_range,
+                                   Inversion.Sdx, Inversion.Sdy,
+                                   Inversion.particle_positions,
+                                   contours=contours,
+                                   dimension_scale=dimension_scale,
+                                   data_scale=data_scale,
+                                   contourf_args=contourf_args,
+                                   imshow_args=imshow_args,
+                                   scatter_args=scatter_args)
 
     return cf, c1
