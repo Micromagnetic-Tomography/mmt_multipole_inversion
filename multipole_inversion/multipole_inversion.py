@@ -296,9 +296,9 @@ class MultipoleInversion(object):
         Save the covariance matrix computed during the inversion obtained
         with the sigma option in the self.compute_inversion method. 
         
-        norm       :: If norm is False, standard deviation and covariance
-                      matrix are saved. If norm is True, standard deviation
-                      and the normalized covariance are saved instead.
+        norm       :: If norm is False covariance matrix is saved. 
+                      If norm is True the normalized covariance is
+                      saved instead.
         """
         BASEDIR = Path(basedir)
         if save_name == 'TIME_STAMP':
