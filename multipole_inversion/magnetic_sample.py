@@ -76,6 +76,8 @@ class MagneticSample(object):
     This class calculates the magnetic field from the point sources and adds
     them to generate the total flux at every area of the scan grid mesh.
 
+    ::
+ 
                              Sdx
                           ___/___
                          /      /            Scan Grid
