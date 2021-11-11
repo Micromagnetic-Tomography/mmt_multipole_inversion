@@ -318,7 +318,7 @@ class MagneticSample(object):
         noise = rstate.normal(loc=0.0, scale=std_dev, size=self.Bz_array.shape)
         self.Bz_array_noised = np.copy(self.Bz_array) + noise
 
-    # TODO: save all arays into a single npz file npz_compressed
+    # TODO: save all arrays into a single npz file npz_compressed
     def save_data(self, filename='TIME_STAMP', basedir='', noised_array=False):
         """
         Save the system properties as a JSON file and relevant arrays in a
