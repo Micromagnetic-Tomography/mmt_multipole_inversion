@@ -16,6 +16,7 @@ from pathlib import Path
 from . import susceptibility_modules as sus_mods
 from typing import Optional
 from typing import Literal  # Working with Python >3.8
+from typing import Union    # Working with Python >3.8
 from . import plot_tools as pt
 
 
@@ -40,7 +41,7 @@ def dipole_field(dip_r, dip_m, pos_r):
 
 SusOptions = Literal['spherical_harmonics_basis',
                      'maxwell_cartesian_polynomials',
-                     'cartesian_speherical_harmonics'
+                     'cartesian_spherical_harmonics'
                      ]
 ExpOptions = Literal['dipole', 'quadrupole', 'octupole']
 
@@ -50,8 +51,8 @@ class MultipoleInversion(object):
     """
 
     def __init__(self,
-                 sample_config_file: str,
-                 sample_arrays: Optional[str],  # TODO: set to npz file
+                 sample_config_file: Union[str, Path],
+                 sample_arrays: Optional[Union[str, Path]],  # TODO: set to npz file
                  expansion_limit: ExpOptions = 'quadrupole',
                  verbose: bool = True,
                  sus_functions_module: SusOptions = 'spherical_harmonics_basis'
@@ -95,7 +96,7 @@ class MultipoleInversion(object):
                               ' Set manually.')
 
         # Optional sequence to set the origin of scan positions
-        self.scan_origin = (0.0, 0.0)
+        # self.scan_origin = (0.0, 0.0)
 
         # Load metadata
         with open(sample_config_file, 'r') as f:
@@ -113,12 +114,8 @@ class MultipoleInversion(object):
 
         # Set the variables scan_origin_x and scan_origin_y if found in the
         # dictionary, otherwise set them to 0.0
-        for k in ['Scan origin x', 'Scan origin y']:
-            attr = k.lower().replace(' ', '_')
-            if k in metadict.keys():
-                setattr(self, attr, metadict[k])
-            else:
-                setattr(self, attr, 0.0)
+        self.scan_origin_x = metadict.get('Scan origin x', 0.0)
+        self.scan_origin_y = metadict.get('Scan origin y', 0.0)
 
         self.generate_measurement_mesh()
 
