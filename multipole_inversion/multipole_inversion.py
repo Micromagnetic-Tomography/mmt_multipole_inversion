@@ -45,7 +45,7 @@ SusOptions = Literal['spherical_harmonics_basis',
                      ]
 ExpOptions = Literal['dipole', 'quadrupole', 'octupole']
 
-
+# TODO: verbose should be more useful for debugging
 class MultipoleInversion(object):
     """
     """
@@ -58,14 +58,53 @@ class MultipoleInversion(object):
                  sus_functions_module: SusOptions = 'spherical_harmonics_basis'
                  ) -> None:
         """
-        sample_config_file  ::
-        sample_arrays       :: An npz file with, at least, the scan signal Bz
-                               and the particle positions (magnetic sources)
-        expansion_limit     :: 'dipole', 'quadrupole', 'octupole'
-                                Higher order multipole term to compute the
-                                field contribution from the potential of the
-                                magnetic particles
-        verbose             ::
+        Class to perform multipole inversions of a magnetic scan surface into
+        multiple magnetic sources located within a sample. Specifications of
+        the scan grid and the magnetic particles in the sample can be generated
+        using the `MagneticSample` class.
+
+        Parameters
+        ----------
+        sample_config_file
+            Path to a `json` file with the specifications of the scan grid and
+            the magnetic particles. The following keys are mandatory
+                Scan height Hz
+                Scan area x-dimension Sx
+                Scan area y-dimension Sy
+                Scan x-step Sdx
+                Scan y-step Sdy
+                Number of particles
+                Time stamp
+            Optional:
+                Scan origin x
+                Scan origin y
+        sample_arrays
+            An `npz` file containing the scan signal Bz and the particle
+            positions (magnetic sources). The file can contain other
+            information as well but it is not read here. If the two arrays are
+            not specified they can be set manually using the `Bz_array` and
+            `particle_positions` class variables.
+        expansion_limit
+            Higher order multipole term to compute the field contribution from
+            the potential of the magnetic particles. Options:
+                `dipole`, `quadrupole`, `octupole`
+        verbose
+            Print extra information about the calculations.
+        sus_functions_module
+            Spherical harmonic basis for the susceptibility matrix used for the
+            multipole inversion. The fully orthogonal and linearly independent
+            basis is the `spherical_harmonics_basis`. Other options are not
+            orthogonal but might be necessary for comparison. For details see
+            the comments in the libraries in the `sus_functions_module/`
+            directory and the Notes.
+
+        Notes
+        -----
+        Mathematical details for the multipole inversion can be found in
+            D. Cortés-Ortuño, K. Fabian, L. V. de Groot
+            Single Particle Multipole Expansions From Micromagnetic Tomography
+            G^3, 22(4), e2021GC009663 (2021)
+            https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/2021GC009663
         """
 
         # Set the module from which to find the Bz susceptibility functions,
@@ -203,18 +242,29 @@ class MultipoleInversion(object):
             print(f'Generation of Q matrix took: {t1 - t0:.4f} s')
         # print('Q shape:', Q.shape)
 
-    def compute_inversion(self, method='sp_pinv2',
+    def compute_inversion(self,
+                          method='sp_pinv2',
                           rcond=1e-15,
                           **method_kwargs
                           ):
         """
-        Requires generation of Q matrix
+        Computes the multipole inversion. Results are saved in the
+        `inv_multipole_moments` and `inv_Bz_array` variables. This method
+        requires the generation of the `Q` matrix, hence the
+        `generate_forward_matrix` method is called if `Q` is `None`.
 
-        method      :: The numerical method to perform the inversion. Options:
-
-                       np_pinv  -> Numpy's pinv
-                       sp_pinv  -> Scipy's pinv (not recommended -> memory issues)
-                       sp_pinv2 -> Scipy's pinv2
+        Parameters
+        ----------
+        method
+            The numerical method to perform the inversion. Options:
+                np_pinv  -> Numpy's pinv
+                sp_pinv  -> Scipy's pinv (not recommended -> memory issues)
+                sp_pinv2 -> Scipy's pinv2
+        rcond
+            Tolerance for small singular values. See Numpy's and Scipy's docs
+            for the pseudo inverse matrix methods.
+        **method_kwargs
+            Extra parameters passed to Numpy or Scipy functions
         """
         if self.Q is None:
             if self.verbose:
@@ -255,8 +305,8 @@ class MultipoleInversion(object):
 
     def save_multipole_moments(self, save_name='TIME_STAMP', basedir='.'):
         """
-        Save the multipole values computed from the inversion using
-        the self.compute_inversion method.
+        Save the multipole values in `npz` files. Values are computed from the
+        inversion using the `compute_inversion` method.
         """
         BASEDIR = Path(basedir)
         if save_name == 'TIME_STAMP':
@@ -269,6 +319,7 @@ class MultipoleInversion(object):
 # PLOTS -----------------------------------------------------------------------
 # These functions have been moved to the plot_tools module but will be left
 # here (for a while) for compatibility
+# (UNDOCUMENTED)
 
 def plot_sample(Inversion, ax,
                 contourf_args={'levels': 50},
@@ -326,16 +377,17 @@ def plot_difference_Bz(Inversion, ax, contours=50,
                        scatter_args={'c': 'k', 's': 1}
                        ):
 
+    # use the contours argument for the number of levels (old code!)
+    # so update the contourf_args dictionary
     contourf_args_mod = {**contourf_args, 'levels': contours}
     cf, c1 = pt.plot_difference_Bz(ax,
                                    Inversion.Bz_array, Inversion.inv_Bz_array,
                                    Inversion.Sx_range, Inversion.Sy_range,
                                    Inversion.Sdx, Inversion.Sdy,
                                    Inversion.particle_positions,
-                                   contours=contours,
                                    dimension_scale=dimension_scale,
                                    data_scale=data_scale,
-                                   contourf_args=contourf_args,
+                                   contourf_args=contourf_args_mod,
                                    imshow_args=imshow_args,
                                    scatter_args=scatter_args)
 

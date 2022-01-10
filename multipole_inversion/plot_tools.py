@@ -14,6 +14,30 @@ def plot_sample(ax,
                 dimension_scale=1., data_scale=1.,
                 ):
     """
+    Plot the magnetic scan grid signal stored in the `Bz_array` variable.
+
+    Parameters
+    ----------
+    ax
+        Matplotlib axis object
+    Bz_array
+        2D matrix with the magnetic scan signal
+    Sx_range, Sy_range, Sdx, Sdy, particle_positions
+        Specifications of the scan grid and the partticle locations
+    contourf_args,
+        Plots Bz using a colormap and filled contour levels. This options is
+        a `dict` passed to the corresponding matplotlib function.
+    contour_args,
+        Plots the line profile of the contour levels. Can be deactivated by
+        setting this as `None` instead of a `dict`
+    scatter_args
+        Plots the particle positions as data points. Can be deactivated by
+        setting this as `None` instead of a `dict`
+    imshow_args
+        If specified, use `imshow` instead of `contourf` for the colourmap. In
+        this case all the contourf args are ignored
+    dimension_scale, data_scale
+        Scaling for the spatial and field data
     """
 
     dms = dimension_scale
@@ -33,36 +57,57 @@ def plot_sample(ax,
                        **imshow_args)
 
     if contour_args:
-        ax.contour(Sx_range * dms, Sy_range * dms,
-                   Bz_array * dds,
-                   **contour_args)
+        contours = ax.contour(Sx_range * dms, Sy_range * dms,
+                              Bz_array * dds,
+                              **contour_args)
 
     sc = ax.scatter(particle_positions[:, 0] * dms,
                     particle_positions[:, 1] * dms,
                     **scatter_args)
-    return cf, sc
+
+    if contour_args:
+        return cf, sc, contours
+    else:
+        return cf, sc
 
 
 def plot_inversion_Bz(ax,
-                      inv_Bz_array, Sx_range, Sy_range,
-                      Sdx, Sdy, particle_positions,
-                      dimension_scale=1., data_scale=1.,
+                      inv_Bz_array,
+                      Sx_range, Sy_range, Sdx, Sdy, particle_positions,
                       #
-                      imshow_args=None,
                       contourf_args={'cmap': 'RdYlBu', 'levels': 10},
                       #
                       contour_args={'colors': 'k', 'linewidths': .2, 'levels': 10},
-                      scatter_args={'c': 'k'}
+                      scatter_args={'c': 'k'},
+                      imshow_args=None,
+                      dimension_scale=1., data_scale=1.,
                       ):
     """
     Given a matplotlib axis, plot the inverted field Bz on it, and the
     positions of the particles
 
-    Optional:
-
-        If imshow_args is specified, this functions uses imshow instead
-        of contourf to plot the colored background with Bz_array. In this
-        case, all the contourf args are ignored
+    Parameters
+    ----------
+    ax
+        Matplotlib axis object
+    inv_Bz_array
+        2D matrix with the inverted magnetic scan signal
+    Sx_range, Sy_range, Sdx, Sdy, particle_positions
+        Specifications of the scan grid and the partticle locations
+    contourf_args,
+        Plots Bz using a colormap and filled contour levels. This options is
+        a `dict` passed to the corresponding matplotlib function.
+    contour_args,
+        Plots the line profile of the contour levels. Can be deactivated by
+        setting this as `None` instead of a `dict`
+    scatter_args
+        Plots the particle positions as data points. Can be deactivated by
+        setting this as `None` instead of a `dict`
+    imshow_args
+        If specified, use `imshow` instead of `contourf` for the colourmap. In
+        this case all the contourf args are ignored
+    dimension_scale, data_scale
+        Scaling for the spatial and field data
     """
 
     dms = dimension_scale
@@ -96,11 +141,38 @@ def plot_inversion_Bz(ax,
 def plot_difference_Bz(ax,
                        Bz_array, inv_Bz_array,
                        Sx_range, Sy_range, Sdx, Sdy, particle_positions,
-                       dimension_scale=1., data_scale=1.,
                        contourf_args={'cmap': 'RdYlBu', 'levels': 50},
+                       scatter_args={'c': 'k', 's': 1},
                        imshow_args=None,
-                       scatter_args={'c': 'k', 's': 1}
+                       dimension_scale=1., data_scale=1.,
                        ):
+    """
+    Given a matplotlib axis, plot the inverted field Bz on it, and the
+    positions of the particles
+
+    Parameters
+    ----------
+    ax
+        Matplotlib axis object
+    Bz_array, inv_Bz_array
+        2D matrices with the forward and the inverted magnetic scan signals
+    Sx_range, Sy_range, Sdx, Sdy, particle_positions
+        Specifications of the scan grid and the partticle locations
+    contourf_args,
+        Plots Bz using a colormap and filled contour levels. This options is
+        a `dict` passed to the corresponding matplotlib function.
+    contour_args,
+        Plots the line profile of the contour levels. Can be deactivated by
+        setting this as `None` instead of a `dict`
+    scatter_args
+        Plots the particle positions as data points. Can be deactivated by
+        setting this as `None` instead of a `dict`
+    imshow_args
+        If specified, use `imshow` instead of `contourf` for the colourmap. In
+        this case all the contourf args are ignored
+    dimension_scale, data_scale
+        Scaling for the spatial and field data
+    """
 
     dms = dimension_scale
     dds = data_scale
@@ -109,7 +181,6 @@ def plot_difference_Bz(ax,
     if not imshow_args:
         cf = ax.contourf(Sx_range * dms, Sy_range * dms,
                          (inv_Bz_array - Bz_array) * dds,
-                         contours,
                          **contourf_args)
     else:
         dx, dy = 0.5 * Sdx * dms, 0.5 * Sdy * dms
