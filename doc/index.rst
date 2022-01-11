@@ -17,6 +17,12 @@ Welcome to Multipole Inversion's documentation!
 
    source/index
 
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   tutorial/tutorial_basics.ipynb
+
 
 Indices and tables
 ==================

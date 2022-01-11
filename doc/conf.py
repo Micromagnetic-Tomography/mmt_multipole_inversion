@@ -31,8 +31,8 @@ extensions = ['sphinx.ext.autodoc',      # autodocument functions
               'sphinx.ext.napoleon',     # to convert Numpy docstring into reST
               'sphinx.ext.mathjax',      # for math strings
               'sphinx.ext.autosummary',
-              'nbsphinx',                # render notebooks 
-]
+              'nbsphinx',                # render notebooks
+              ]
 
 
 autodoc_typehints = "description"

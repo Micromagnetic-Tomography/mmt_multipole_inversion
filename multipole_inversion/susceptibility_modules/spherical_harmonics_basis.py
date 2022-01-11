@@ -16,7 +16,7 @@ def dipole_Bz_sus(dip_r, pos_r, Q, n_col_stride):
 
         (len(pos_r), len(dip_r) * n_col_stride)
 
-    Method ::
+    Method
 
     For every position in the pos_r array, the function computes the susc Bz
     contribution from all the magnetic sources at positions in dip_r. These
@@ -28,34 +28,39 @@ def dipole_Bz_sus(dip_r, pos_r, Q, n_col_stride):
         pos_r = [r0 r1 r2 ... rN]
 
     and if n_col_stride=5 (so we have space to store quadrupolar Bz sus)
-    then Q is populated as
+    then Q is populated as::
 
-    Q =  _                                                                                                      _
-        | mx_0(r0)  my_0(r0)  mz_0(r0)  0  0  0  0  0  mx_1(r0)  my_1(r0)  mz_1(r0)  0  0 ... mz_M(r0) 0 0 0 0 0 |
-        | mx_0(r1)  my_0(r1)  mz_0(r1)  0  0  0  0  0  mx_1(r0)  my_1(r0)  mz_1(r0)  0  0 ...                    |
-        | mx_0(r2)  ...                                                                                          |
-        |                                                                                                        |
-        |   ...                                                                                                  |
-        |_mx_0(rN)                                                                                              _|
+        Q =  _                                                                                                      _
+            | mx_0(r0)  my_0(r0)  mz_0(r0)  0  0  0  0  0  mx_1(r0)  my_1(r0)  mz_1(r0)  0  0 ... mz_M(r0) 0 0 0 0 0 |
+            | mx_0(r1)  my_0(r1)  mz_0(r1)  0  0  0  0  0  mx_1(r0)  my_1(r0)  mz_1(r0)  0  0 ...                    |
+            | mx_0(r2)  ...                                                                                          |
+            |                                                                                                        |
+            |   ...                                                                                                  |
+            |_mx_0(rN)                                                                                              _|
 
     where mx_j(ri) is the x-component of the Bz susc contribution from the
     dipole located at dip_r[j]
     Notice that if Q also stores octupolar fields, then we would have strides
     of 12 zeros (5 quad + 7 oct moments), so n_col_stride=15
 
+    Parameters
+    ----------
+    dip_r
+        N x 3 array OR 1 x 3 array
+    pos_r
+        M x 3 array OR 1 x 3 array
 
-    Inputs ::
-
-        dip_r   :: N x 3 array OR 1 x 3 array
-        pos_r   :: M x 3 array OR 1 x 3 array
-
-    Returns ::
-
+    Returns
+    -------
     None
+        None
 
+    Notes
+    -----
     Calculate magnetic flux Bz-susceptibility per dipole component generated
     by dipoles located in position dip_r (m) at position  pos_r (m)
     Units of result is T / (A m2)
+
     """
     for i, ref_pos in enumerate(pos_r):
 
@@ -89,20 +94,22 @@ def quadrupole_Bz_sus(dip_r, pos_r, Q, n_col_stride):
 
         (len(pos_r), len(dip_r) * n_col_stride)
 
-    Methods ::
+    Methods
 
     See dipole_Bz_sus documentation for details of this function.
     The Q array is populated strating from the 3rd column since the 0-2 columns
     are reserved for the dipolar Bz susceptibility contributions
 
-    Inputs ::
-
-        dip_r   :: N x 3 array OR 1 x 3 array
-        pos_r   :: M x 3 array
-
+    Parameters
+    ----------
+    dip_r
+        N x 3 array OR 1 x 3 array
+    pos_r
+        M x 3 array OR 1 x 3 array
 
     Returns
-
+    -------
+    None
         None
 
     """
@@ -146,20 +153,23 @@ def octupole_Bz_sus(dip_r, pos_r, Q, n_col_stride):
 
         (len(pos_r), len(dip_r) * n_col_stride)
 
-    Methods ::
+    Methods
 
     See dipole_Bz_sus documentation for details of this function.
     The Q array is populated strating from the 8th column since the 0-2 columns
     are reserved for the dipolar Bz susceptibility contributions and
     columns 3-7 for the quadrupolar contributions.
 
-    Inputs::
-
-        dip_r   :: N x 3 array OR 1 x 3 array
-        pos_r   :: M x 3 array
+    Parameters
+    ----------
+    dip_r
+        N x 3 array OR 1 x 3 array
+    pos_r
+        M x 3 array OR 1 x 3 array
 
     Returns
-
+    -------
+    None
         None
 
     """

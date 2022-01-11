@@ -13,8 +13,7 @@ def plot_sample(ax,
                 imshow_args=None,
                 dimension_scale=1., data_scale=1.,
                 ):
-    """
-    Plot the magnetic scan grid signal stored in the `Bz_array` variable.
+    """ Plot the magnetic scan grid signal stored in the `Bz_array` variable
 
     Parameters
     ----------
@@ -38,6 +37,12 @@ def plot_sample(ax,
         this case all the contourf args are ignored
     dimension_scale, data_scale
         Scaling for the spatial and field data
+
+    Returns
+    -------
+    cf, c1
+        Plot objects
+
     """
 
     dms = dimension_scale
@@ -74,17 +79,13 @@ def plot_sample(ax,
 def plot_inversion_Bz(ax,
                       inv_Bz_array,
                       Sx_range, Sy_range, Sdx, Sdy, particle_positions,
-                      #
                       contourf_args={'cmap': 'RdYlBu', 'levels': 10},
-                      #
                       contour_args={'colors': 'k', 'linewidths': .2, 'levels': 10},
                       scatter_args={'c': 'k'},
                       imshow_args=None,
                       dimension_scale=1., data_scale=1.,
                       ):
-    """
-    Given a matplotlib axis, plot the inverted field Bz on it, and the
-    positions of the particles
+    """Plot the inverted field Bz and the positions of the particles
 
     Parameters
     ----------
@@ -108,6 +109,12 @@ def plot_inversion_Bz(ax,
         this case all the contourf args are ignored
     dimension_scale, data_scale
         Scaling for the spatial and field data
+
+    Returns
+    -------
+    cf, c1
+        Plot objects
+
     """
 
     dms = dimension_scale
@@ -146,9 +153,7 @@ def plot_difference_Bz(ax,
                        imshow_args=None,
                        dimension_scale=1., data_scale=1.,
                        ):
-    """
-    Given a matplotlib axis, plot the inverted field Bz on it, and the
-    positions of the particles
+    """Plot the residual field and the positions of the particles
 
     Parameters
     ----------
@@ -159,19 +164,25 @@ def plot_difference_Bz(ax,
     Sx_range, Sy_range, Sdx, Sdy, particle_positions
         Specifications of the scan grid and the partticle locations
     contourf_args,
-        Plots Bz using a colormap and filled contour levels. This options is
+        Plots Bz using a colormap and filled contour levels. This options is\
         a `dict` passed to the corresponding matplotlib function.
     contour_args,
-        Plots the line profile of the contour levels. Can be deactivated by
+        Plots the line profile of the contour levels. Can be deactivated by\
         setting this as `None` instead of a `dict`
     scatter_args
-        Plots the particle positions as data points. Can be deactivated by
+        Plots the particle positions as data points. Can be deactivated by\
         setting this as `None` instead of a `dict`
     imshow_args
-        If specified, use `imshow` instead of `contourf` for the colourmap. In
+        If specified, use `imshow` instead of `contourf` for the colourmap. In\
         this case all the contourf args are ignored
     dimension_scale, data_scale
         Scaling for the spatial and field data
+
+    Returns
+    -------
+    cf, c1
+        Plot objects
+
     """
 
     dms = dimension_scale
