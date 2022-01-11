@@ -48,6 +48,10 @@ ExpOptions = Literal['dipole', 'quadrupole', 'octupole']
 # TODO: verbose should be more useful for debugging
 class MultipoleInversion(object):
     """
+    Class to perform multipole inversions of a magnetic scan surface into
+    multiple magnetic sources located within a sample. Specifications of
+    the scan grid and the magnetic particles in the sample can be generated
+    using the `MagneticSample` class.
     """
 
     def __init__(self,
@@ -58,11 +62,6 @@ class MultipoleInversion(object):
                  sus_functions_module: SusOptions = 'spherical_harmonics_basis'
                  ) -> None:
         """
-        Class to perform multipole inversions of a magnetic scan surface into
-        multiple magnetic sources located within a sample. Specifications of
-        the scan grid and the magnetic particles in the sample can be generated
-        using the `MagneticSample` class.
-
         Parameters
         ----------
         sample_config_file
