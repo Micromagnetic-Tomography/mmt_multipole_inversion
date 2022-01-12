@@ -28,16 +28,16 @@ author = 'David Cortés-Ortuño, Karl Fabian, Lennart V. de Groot'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = ['sphinx.ext.autodoc',      # autodocument functions
-              'sphinx.ext.napoleon',     # to convert Numpy docstring into reST
               'sphinx.ext.mathjax',      # for math strings
               'sphinx.ext.autosummary',
               'nbsphinx',                # render notebooks
+              'numpydoc',     # to convert Numpy docstring into reST
               ]
 
 
 autodoc_typehints = "description"
-napoleon_numpy_docstring = True
-napoleon_google_docstring = False
+# napoleon_numpy_docstring = True
+# napoleon_google_docstring = False
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -45,8 +45,11 @@ templates_path = ['_templates']
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['_build', '_templates',
+                    'Thumbs.db', '.DS_Store']
 
+numpydoc_show_class_members = False
+autosummary_generate = True
 
 # -- Options for HTML output -------------------------------------------------
 

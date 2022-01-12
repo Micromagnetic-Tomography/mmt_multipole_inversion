@@ -17,31 +17,21 @@ Submodules
 multipole\_inversion.magnetic\_sample module
 --------------------------------------------
 
-.. automodule:: multipole_inversion.magnetic_sample
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. currentmodule:: multipole_inversion.magnetic_sample
+
+.. autosummary:: multipole_inversion.magnetic_sample
 
 multipole\_inversion.multipole\_inversion module
 ------------------------------------------------
 
-.. automodule:: multipole_inversion.multipole_inversion
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. autosummary:: multipole_inversion.multipole_inversion
 
 multipole\_inversion.plot\_tools module
 ---------------------------------------
 
-.. automodule:: multipole_inversion.plot_tools
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. autosummary:: multipole_inversion.plot_tools
 
 Module contents
 ---------------
 
-.. automodule:: multipole_inversion
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. autosummary:: multipole_inversion
