@@ -12,7 +12,7 @@ def dipole_Bz_sus(dip_r, pos_r, Q, n_col_stride):
     """
     This function generates the dipolar Bz susceptibility field contributed
     from magnetic point sources over different positions of a scan grid. The
-    method used here is populating the Q matrix which has size:
+    method used here is populating the Q matrix which has size::
 
         (len(pos_r), len(dip_r) * n_col_stride)
 
@@ -24,7 +24,8 @@ def dipole_Bz_sus(dip_r, pos_r, Q, n_col_stride):
     contributions from all the sources at pos_r[i]. The stride value
     n_col_stride is necessary to "jump" over array cells reserved to store
     quadrupolar or octupolar susc contributions.
-    If
+    If::
+
         pos_r = [r0 r1 r2 ... rN]
 
     and if n_col_stride=5 (so we have space to store quadrupolar Bz sus)

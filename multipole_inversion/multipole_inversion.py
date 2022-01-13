@@ -104,6 +104,7 @@ class MultipoleInversion(object):
             Single Particle Multipole Expansions From Micromagnetic Tomography
             G^3, 22(4), e2021GC009663 (2021)
             https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/2021GC009663
+
         """
 
         # Set the module from which to find the Bz susceptibility functions,
@@ -183,6 +184,7 @@ class MultipoleInversion(object):
         Generate coordinates for the measurement mesh
         The number of grid points in each direction (xy) are calculated by
         rounding the lateral size by the grid step size, e.g. round(Sx / Sdx)
+
         """
 
         # Generate measurement mesh
@@ -202,6 +204,7 @@ class MultipoleInversion(object):
         computed from the scalar potential of the particles approximated with
         the multipole expansion up to the order specified by
         self.expansion_limit
+
         """
         # Moment vector m = [mx[0], my[0], mz[0], ... , mx[N-1], my[N-1], mz[N-1] ]
         # Position vector  p = [(x[0], y[0]),  ... , x[

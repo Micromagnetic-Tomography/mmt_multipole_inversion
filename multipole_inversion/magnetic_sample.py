@@ -289,6 +289,7 @@ class MagneticSample(object):
         Generate the magnetic flux array at the scan surface, i.e. calculate
         the total Bz contribution from the particles at every grid point of
         the scan surface
+
         """
 
         # Generate measurement mesh (maybe replace 0.0 by a shifted origin)

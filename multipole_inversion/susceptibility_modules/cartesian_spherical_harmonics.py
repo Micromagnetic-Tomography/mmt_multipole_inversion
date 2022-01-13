@@ -12,7 +12,7 @@ def dipole_Bz_sus(dip_r, pos_r, Q, n_col_stride):
     """
     This function generates the dipolar Bz susceptibility field contributed
     from magnetic point sources over different positions of a scan grid. The
-    method used here is populating the Q matrix which has size:
+    method used here is populating the Q matrix which has size::
 
         (len(pos_r), len(dip_r) * n_col_stride)
 
@@ -21,13 +21,16 @@ def dipole_Bz_sus(dip_r, pos_r, Q, n_col_stride):
         dip_r   :: N x 3 array OR 1 x 3 array
         pos_r   :: M x 3 array OR 1 x 3 array
 
-    Returns ::
-
+    Returns
+    -------
     None
 
+    Notes
+    -----
     Calculate magnetic flux Bz-susceptibility per dipole component generated
     by dipoles located in position dip_r (m) at position  pos_r (m)
     Units of result is T / (A m2)
+
     """
 
     for i, ref_pos in enumerate(pos_r):
@@ -59,8 +62,9 @@ def quadrupole_Bz_sus(dip_r, pos_r, Q, n_col_stride):
     pos_r   :: M x 3 array OR 1 x 3 array
 
     Returns
+    -------
+    None
 
-        None
     """
 
     for i, ref_pos in enumerate(pos_r):
@@ -96,8 +100,10 @@ def octupole_Bz_sus(dip_r, pos_r, Q, n_col_stride):
     pos_r   :: M x 3 array OR 1 x 3 array
 
     Returns
-
+    -------
+    ndarray
         N x 7  array with 7 octupole moments from the traceless 3-tensor
+
     """
 
     octp = np.zeros((dip_r.shape[0], 7))

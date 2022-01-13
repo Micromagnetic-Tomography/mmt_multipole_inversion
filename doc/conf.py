@@ -31,7 +31,8 @@ extensions = ['sphinx.ext.autodoc',      # autodocument functions
               'sphinx.ext.mathjax',      # for math strings
               'sphinx.ext.autosummary',
               'nbsphinx',                # render notebooks
-              'numpydoc',     # to convert Numpy docstring into reST
+              'numpydoc',                # to convert Numpy docstring into reST
+              'sphinx_copybutton'        # copy code blocks
               ]
 
 
