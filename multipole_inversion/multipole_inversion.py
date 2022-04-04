@@ -245,8 +245,7 @@ class MultipoleInversion(object):
         # print('Q shape:', Q.shape)
 
     def compute_inversion(self,
-                          method='sp_pinv2',
-                          rcond=1e-15,
+                          method='sp_pinv',
                           **method_kwargs
                           ):
         """
@@ -261,12 +260,13 @@ class MultipoleInversion(object):
             The numerical method to perform the inversion. Options:
                 np_pinv  -> Numpy's pinv
                 sp_pinv  -> Scipy's pinv (not recommended -> memory issues)
-                sp_pinv2 -> Scipy's pinv2
-        rcond
-            Tolerance for small singular values. See Numpy's and Scipy's docs
-            for the pseudo inverse matrix methods.
+                sp_pinv2 -> Scipy's pinv2 (deprecated with Scipy's >= 1.7
+                            so this will call sp_pinv instead)
         **method_kwargs
-            Extra parameters passed to Numpy or Scipy functions
+            Extra parameters passed to Numpy or Scipy functions. For Numpy, the
+            tolerance can be set using `rcond` while for `Scipy` it is
+            recommended to use `atol` and `rtol`. See their documentations for
+            detailed information.
         """
         if self.Q is None:
             if self.verbose:
@@ -276,15 +276,11 @@ class MultipoleInversion(object):
         if method == 'np_pinv':
             if self.verbose:
                 print('Using numpy.pinv for inversion')
-            self.IQ = np.linalg.pinv(self.Q, rcond=rcond, **method_kwargs)
-        elif method == 'sp_pinv':
+            self.IQ = np.linalg.pinv(self.Q, **method_kwargs)
+        elif method == 'sp_pinv' or method == 'sp_pinv2':
             if self.verbose:
                 print('Using scipy.linalg.pinv for inversion')
-            self.IQ = slin.pinv(self.Q, rcond=rcond, **method_kwargs)
-        elif method == 'sp_pinv2':
-            if self.verbose:
-                print('Using scipy.linalg.pinv2 for inversion')
-            self.IQ = slin.pinv2(self.Q, rcond=rcond, **method_kwargs)
+            self.IQ = slin.pinv(self.Q, **method_kwargs)
         # elif method == 'tf_pinv':
         #     if self.verbose:
         #         print('Using tf.linalg.pinv for inversion')
