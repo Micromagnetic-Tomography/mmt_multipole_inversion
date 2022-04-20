@@ -40,13 +40,15 @@ def plot_sample(ax,
 
     Returns
     -------
-    cf, c1
+    (contourf/imshow, scatter, contours)
         Plot objects
 
     """
 
     dms = dimension_scale
     dds = data_scale
+
+    cf, sc, contours = None, None, None
 
     if not imshow_args:
         cf = ax.contourf(Sx_range * dms, Sy_range * dms, Bz_array * dds,
@@ -66,14 +68,12 @@ def plot_sample(ax,
                               Bz_array * dds,
                               **contour_args)
 
-    sc = ax.scatter(particle_positions[:, 0] * dms,
-                    particle_positions[:, 1] * dms,
-                    **scatter_args)
+    if scatter_args:
+        sc = ax.scatter(particle_positions[:, 0] * dms,
+                        particle_positions[:, 1] * dms,
+                        **scatter_args)
 
-    if contour_args:
-        return cf, sc, contours
-    else:
-        return cf, sc
+    return cf, sc, contours
 
 
 def plot_inversion_Bz(ax,
@@ -112,13 +112,15 @@ def plot_inversion_Bz(ax,
 
     Returns
     -------
-    cf, c1
+    (contourf/imshow, scatter, contours)
         Plot objects
 
     """
 
     dms = dimension_scale
     dds = data_scale
+
+    cf, c1, c2 = None, None, None
 
     # plt.imshow(computed_FF.reshape(100, 101))
     # plt.colorbar()
@@ -137,9 +139,12 @@ def plot_inversion_Bz(ax,
 
     c1 = ax.contour(Sx_range * dms, Sy_range * dms,
                     inv_Bz_array * dds, **contour_args)
-    c2 = ax.scatter(particle_positions[:, 0] * dms,
-                    particle_positions[:, 1] * dms,
-                    **scatter_args)
+
+    if scatter_args:
+        c2 = ax.scatter(particle_positions[:, 0] * dms,
+                        particle_positions[:, 1] * dms,
+                        **scatter_args)
+
     # plt.savefig(f'FORWARD_scanning_array_{ts}.pdf', bbox_inches='tight')
 
     return cf, c1, c2
@@ -180,13 +185,15 @@ def plot_difference_Bz(ax,
 
     Returns
     -------
-    cf, c1
+    (contourf/imshow, scatter)
         Plot objects
 
     """
 
     dms = dimension_scale
     dds = data_scale
+
+    cf, c1 = None, None
 
     # plt.imshow((computed_FF - Bz_Data).reshape(100, 101))
     if not imshow_args:
@@ -203,9 +210,11 @@ def plot_difference_Bz(ax,
                                Sy_range.max() * dms + dy],
                        **imshow_args)
 
-    c1 = ax.scatter(particle_positions[:, 0] * dms,
-                    particle_positions[:, 1] * dms,
-                    **scatter_args)
+    if scatter_args:
+        c1 = ax.scatter(particle_positions[:, 0] * dms,
+                        particle_positions[:, 1] * dms,
+                        **scatter_args)
+
     # plt.savefig(f'ERROR_scanning_array_{ts}.pdf', bbox_inches='tight')
     # plt.show()
 
