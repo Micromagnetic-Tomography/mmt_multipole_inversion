@@ -6,6 +6,10 @@
 Multipole Inversion documentation
 =================================
 
+.. image:: images/multipoles.png
+
+----
+
 The **Multipole Inversion** Python library is a tool to perform numerical
 inversions of magnetic scan signal on a surface into one or multiple magnetic
 sources, which are modelled as physical point sources. Numerical inversions are

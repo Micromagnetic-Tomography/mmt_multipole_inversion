@@ -2,6 +2,8 @@
 
 ![](doc/images/multipoles.png)
 
+---
+
 Library for the numerical inversion of a scan grid detecting the magnetic
 signal from magnetic sources by means of a multipole expansion of the
 potential of the sources.
@@ -21,9 +23,15 @@ This library has two main modules
   `MagneticSample` output or be sp[ecified manually (useful for combining with
   other workflows such as micromagnetic simulations)
 
+An additional module to plot results from the inversions is provided in
+`multipole_inversion/plot_tools.py`. Magnetic susceptibility and magnetic field
+functions can be found in the main library as well, although not all of them
+are documented in the tutorial yet.
+
 # Installation
 
-Via `pip` from this repository.
+Via `pip -e .` from the base directory or using `poetry` (recommended for
+development).
 
 # Tutorial
 
