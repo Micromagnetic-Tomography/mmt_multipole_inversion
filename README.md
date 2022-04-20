@@ -30,7 +30,7 @@ This library has two main modules
   `MultipoleInversion` class to perform a numerical inversion from a scan
   signal data. This class requires scan surface specifications, particle (point
   source) locations and the scan signal data. These can be passed from the
-  `MagneticSample` output or be sp[ecified manually (useful for combining with
+  `MagneticSample` output or be specified manually (useful for combining with
   other workflows such as micromagnetic simulations).
 
 An additional module to plot results from the inversions is provided in
