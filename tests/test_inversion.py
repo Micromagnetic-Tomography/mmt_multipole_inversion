@@ -50,9 +50,6 @@ def fw_model_fun():
 
 def test_inversion_single_dipole(limit='dipole'):
 
-    # Generate arrays from the Forward model using a single dipole source
-    fw_model_fun()
-
     inv_model = minv.MultipoleInversion(
             TEST_SAVEDIR / 'MetaDict_fw_model_test_inversion.json',
             TEST_SAVEDIR / 'MagneticSample_fw_model_test_inversion.npz',
@@ -80,6 +77,9 @@ def test_inversion_single_dipole(limit='dipole'):
 
 
 if __name__ == '__main__':
+    # Generate arrays from the Forward model using a single dipole source
+    fw_model_fun()
+
     test_inversion_single_dipole(limit='dipole')
     test_inversion_single_dipole(limit='quadrupole')
     test_inversion_single_dipole(limit='octupole')
