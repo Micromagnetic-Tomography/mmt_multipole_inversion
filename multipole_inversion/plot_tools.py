@@ -1,12 +1,32 @@
 # import matplotlib.pyplot as plt
 # import matplotlib as mpl
 
+# -----------------------------------------------------------------------------
+
+def get_inversion_plot_objects(inv):
+    """Helper function to return a tuple with 5 objects from a multipole
+    inversion instance, to be used with the plot functions
+
+    Parameters
+    ----------
+    inv
+        Instance of MultipoleInversion
+
+    Returns
+    -------
+    tuple
+        (Sx_range, Sy_range, Sdx, Sdy, particle_positions) from `inv`
+
+    """
+    return (inv.Sx_range, inv.Sy_range, inv.Sdx, inv.Sdy,
+            inv.particle_positions)
 
 # -----------------------------------------------------------------------------
 
 
 def plot_sample(ax,
-                Bz_array, Sx_range, Sy_range, Sdx, Sdy, particle_positions,
+                Bz_array,
+                Sx_range, Sy_range, Sdx, Sdy, particle_positions,
                 contourf_args={'levels': 50},
                 contour_args={},
                 scatter_args={'c': 'k', 's': 1},
@@ -22,7 +42,7 @@ def plot_sample(ax,
     Bz_array
         2D matrix with the magnetic scan signal
     Sx_range, Sy_range, Sdx, Sdy, particle_positions
-        Specifications of the scan grid and the partticle locations
+        Specifications of the scan grid and the particle locations
     contourf_args,
         Plots Bz using a colormap and filled contour levels. This options is
         a `dict` passed to the corresponding matplotlib function.
@@ -40,8 +60,8 @@ def plot_sample(ax,
 
     Returns
     -------
-    (contourf/imshow, scatter, contours)
-        Plot objects
+    tuple
+        (contourf/imshow, scatter, contours) plot objects
 
     """
 
@@ -94,7 +114,7 @@ def plot_inversion_Bz(ax,
     inv_Bz_array
         2D matrix with the inverted magnetic scan signal
     Sx_range, Sy_range, Sdx, Sdy, particle_positions
-        Specifications of the scan grid and the partticle locations
+        Specifications of the scan grid and the particle locations
     contourf_args,
         Plots Bz using a colormap and filled contour levels. This options is
         a `dict` passed to the corresponding matplotlib function.
@@ -112,8 +132,8 @@ def plot_inversion_Bz(ax,
 
     Returns
     -------
-    (contourf/imshow, scatter, contours)
-        Plot objects
+    tuple
+        (contourf/imshow, scatter, contours) plot objects
 
     """
 
@@ -167,7 +187,7 @@ def plot_difference_Bz(ax,
     Bz_array, inv_Bz_array
         2D matrices with the forward and the inverted magnetic scan signals
     Sx_range, Sy_range, Sdx, Sdy, particle_positions
-        Specifications of the scan grid and the partticle locations
+        Specifications of the scan grid and the particle locations
     contourf_args,
         Plots Bz using a colormap and filled contour levels. This options is\
         a `dict` passed to the corresponding matplotlib function.
@@ -185,8 +205,8 @@ def plot_difference_Bz(ax,
 
     Returns
     -------
-    (contourf/imshow, scatter)
-        Plot objects
+    tuple
+        (contourf/imshow, scatter) plot objects
 
     """
 
