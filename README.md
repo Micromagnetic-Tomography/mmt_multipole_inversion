@@ -19,7 +19,8 @@ D. Cortés-Ortuño, K. Fabian, L. V. de Groot
 Geochemistry, Geophysics, Geosystems **22(4)**, e2021GC009663 (2021)
 DOI: ![https://doi.org/10.1029/2021GC009663](https://doi.org/10.1029/2021GC009663)
 
-This library is developed by the ![Mimatom / MMT](https://mimatom.org/) project.
+This library is developed as part of the ![Mimatom / MMT](https://mimatom.org/)
+project.
 
 # Library
 
