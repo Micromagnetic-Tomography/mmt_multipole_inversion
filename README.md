@@ -1,3 +1,5 @@
+Zenodo: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6473257.svg)](https://doi.org/10.5281/zenodo.6473257)
+
 # Multipole Inversion
 
 ![](doc/images/multipoles.png)
@@ -5,8 +7,16 @@
 ---
 
 Library for the numerical inversion of a scan grid detecting the magnetic
-signal from magnetic sources by means of a multipole expansion of the
-potential of the sources.
+signal from magnetic sources using a multipole expansion of the magnetic
+potential of the sources. The mathematical background of this method and its
+application to experimental data of a synthetic sample is developed in
+
+D. Cortés-Ortuño, K. Fabian, L. V. de Groot
+![Single Particle Multipole Expansions From Micromagnetic Tomography](https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/2021GC009663)
+Geochemistry, Geophysics, Geosystems **22(4)**, e2021GC009663 (2021)
+DOI: ![https://doi.org/10.1029/2021GC009663](https://doi.org/10.1029/2021GC009663)
+
+# Library
 
 This library has two main modules
 
@@ -14,14 +24,14 @@ This library has two main modules
   class to create a magnetic system with magnetic point sources (dipole or
   higher order multipole sources) and generate the scan signal. This class also
   has methods to save the scan signal data in `npz` format and the scan grid
-  specifications in `json` format
+  specifications in `json` format.
 
 - `multipole_inversion/multipole_inversion.py` : contains the
   `MultipoleInversion` class to perform a numerical inversion from a scan
   signal data. This class requires scan surface specifications, particle (point
   source) locations and the scan signal data. These can be passed from the
   `MagneticSample` output or be sp[ecified manually (useful for combining with
-  other workflows such as micromagnetic simulations)
+  other workflows such as micromagnetic simulations).
 
 An additional module to plot results from the inversions is provided in
 `multipole_inversion/plot_tools.py`. Magnetic susceptibility and magnetic field
@@ -45,3 +55,37 @@ jupytext --to notebook multipoles_inversion_test.py
 The documentation of the classes can be generated using `sphinx` and the
 scripts to do this are located in the `doc` folder. Future releases of this
 library will include an online documentation of this code.
+
+# Cite
+
+If you find this library useful please cite us (you might need LaTeX's
+`url` package)
+
+    @Misc{Cortes2022,
+      author       = {Cortés-Ortuño, David and Fabian, Karl and de Groot, Lennart V.},
+      title        = {{multipole_inversion}},
+      howpublished = {Zenodo \url{doi:10.5281/zenodo.6473257}. Github: \url{https://github.com/Micromagnetic-Tomography/multipole_inversion}},
+      year         = {2022},
+      doi          = {10.5281/zenodo.6473257},
+      url          = {https://doi.org/10.5281/zenodo.6473257},
+    }
+
+If you have a new version of `biblatex` you can also use `@Software` instead of 
+`@Misc`, and add a `version={}` entry. You can also cite the paper with the
+theoretical framework of this library:
+
+
+    @article{Cortes2021,
+    author = {Cortés-Ortuño, David and Fabian, Karl and de Groot, Lennart V.},
+    title = {Single Particle Multipole Expansions From Micromagnetic Tomography},
+    journal = {Geochemistry, Geophysics, Geosystems},
+    volume = {22},
+    number = {4},
+    pages = {e2021GC009663},
+    keywords = {magnetism, micromagnetic tomography, multipole, paleomagnetism, rock magnetism},
+    doi = {https://doi.org/10.1029/2021GC009663},
+    url = {https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/2021GC009663},
+    eprint = {https://agupubs.onlinelibrary.wiley.com/doi/pdf/10.1029/2021GC009663},
+    note = {e2021GC009663 2021GC009663},
+    year = {2021}
+    }
