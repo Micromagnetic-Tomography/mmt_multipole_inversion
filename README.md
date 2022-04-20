@@ -1,9 +1,9 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6473257.svg)](https://doi.org/10.5281/zenodo.6473257)
-[![CC BY-NC-SA 4.0][cc-by-nc-sa-shield]][cc-by-nc-sa]
+![CC BY-NC-SA 4.0][cc-by-nc-sa-shield]
 
 [cc-by-nc-sa-shield]: https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg
 
-# Multipole Inversion
+# MMT Numerical Libraries: Multipole Inversion
 
 ![](doc/images/multipoles.png)
 
@@ -18,6 +18,8 @@ D. Cortés-Ortuño, K. Fabian, L. V. de Groot
 ![Single Particle Multipole Expansions From Micromagnetic Tomography](https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/2021GC009663)
 Geochemistry, Geophysics, Geosystems **22(4)**, e2021GC009663 (2021)
 DOI: ![https://doi.org/10.1029/2021GC009663](https://doi.org/10.1029/2021GC009663)
+
+This library is developed by the ![Mimatom / MMT](https://mimatom.org/) project.
 
 # Library
 
