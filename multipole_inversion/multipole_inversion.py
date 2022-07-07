@@ -1,10 +1,8 @@
 import numpy as np
-# from palettable.cartocolors.diverging import Geyser_5
 import time
 # import datetime
 import json
 # from scipy.special import sph_harm
-import sys
 import scipy.linalg as slin
 # import warnings
 # try:
@@ -44,6 +42,7 @@ SusOptions = Literal['spherical_harmonics_basis',
                      'cartesian_spherical_harmonics'
                      ]
 ExpOptions = Literal['dipole', 'quadrupole', 'octupole']
+
 
 # TODO: verbose should be more useful for debugging
 class MultipoleInversion(object):
@@ -119,7 +118,7 @@ class MultipoleInversion(object):
         self.verbose = verbose
 
         expected_arrays = ['Bz_array', 'particle_positions']
-        self.Bz_array = None
+        self.Bz_array = np.empty(0)
         self.particle_positions = None
 
         # Any other array in the NPZ file will be loaded here
@@ -159,7 +158,7 @@ class MultipoleInversion(object):
         self.generate_measurement_mesh()
 
         # Instatiate the forward matrix
-        self.Q = None
+        self.Q = np.empty(0)
 
     @property
     def expansion_limit(self):
@@ -206,7 +205,7 @@ class MultipoleInversion(object):
         self.expansion_limit
 
         """
-        # Moment vector m = [mx[0], my[0], mz[0], ... , mx[N-1], my[N-1], mz[N-1] ]
+        # Moment vec m = [mx[0], my[0], mz[0], ... , mx[N-1], my[N-1], mz[N-1]]
         # Position vector  p = [(x[0], y[0]),  ... , x[
         # Generate  forward matrix
         # Q[i, j] =
@@ -268,7 +267,7 @@ class MultipoleInversion(object):
             recommended to use `atol` and `rtol`. See their documentations for
             detailed information.
         """
-        if self.Q is None:
+        if self.Q.size == 0:
             if self.verbose:
                 print('Generating forward matrix')
             self.generate_forward_matrix()
@@ -327,17 +326,17 @@ def plot_sample(Inversion, ax,
                 dimension_scale=1., data_scale=1.,
                 ):
 
-    cf, sc = pt.plot_sample(ax,
-                            Inversion.Bz_array,
-                            Inversion.Sx_range, Inversion.Sy_range,
-                            Inversion.Sdx, Inversion.Sdy,
-                            Inversion.particle_positions,
-                            contourf_args=contourf_args,
-                            contour_args=contour_args,
-                            scatter_args=scatter_args,
-                            imshow_args=imshow_args,
-                            dimension_scale=dimension_scale,
-                            data_scale=data_scale)
+    cf, sc, conts = pt.plot_sample(ax,
+                                   Inversion.Bz_array,
+                                   Inversion.Sx_range, Inversion.Sy_range,
+                                   Inversion.Sdx, Inversion.Sdy,
+                                   Inversion.particle_positions,
+                                   contourf_args=contourf_args,
+                                   contour_args=contour_args,
+                                   scatter_args=scatter_args,
+                                   imshow_args=imshow_args,
+                                   dimension_scale=dimension_scale,
+                                   data_scale=data_scale)
     return cf, sc
 
 
