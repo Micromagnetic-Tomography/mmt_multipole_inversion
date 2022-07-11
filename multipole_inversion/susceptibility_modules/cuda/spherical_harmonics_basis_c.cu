@@ -1,7 +1,88 @@
-#include "pop_matrix_cuda_lib.h"
+#include "spherical_harmonics_basis_c.h"
 #include <cmath>
 #include <math.h>
 #include <stdio.h>
+
+
+// Define magnetic constant in GPU
+__device__ double Cm = 1e-7;
+
+// The implementation here uses a grid-stride loop:
+// https://developer.nvidia.com/blog/cuda-pro-tip-write-flexible-kernels-grid-stride-loops/
+__global__ void pop_matrix_dipole(double * Q, double * dip_r, double * pos_r,
+                                  unsigned long long Nsources,
+                                  unsigned long long Nsensors,
+                                  int multipole_order, int n_multipoles,
+                                  int verbose) {
+
+
+    // The thread's unique number
+    int global_idx = blockIdx.x * blockDim.x + threadIdx.x;
+    int stride = gridDim.x * blockDim.x;
+    int threadsInBlock = blockDim.x;
+
+    for (unsigned long long n = global_idx; n < (Nsources * Nsensors); n += stride) {
+
+        unsigned long long i_sensor = n / Nsources;
+        unsigned long long i_source = n % Nsources;
+
+        double x = pos_r[3 * i_sensor    ] - dip_r[3 * i_source    ];
+        double y = pos_r[3 * i_sensor + 1] - dip_r[3 * i_source + 1];
+        double z = pos_r[3 * i_sensor + 2] - dip_r[3 * i_source + 2];
+        double r2 = x * x + y * y + z * z;
+        double r = sqrt(r2);
+
+        // Multipole field susceptibilities; we will re-use this matrix using
+        // the largest number of multipoles
+        double * p = (double *) malloc(sizeof(double) * 2 * multipole_order + 1);
+        int k;
+        double f;
+
+        // DIPOLE
+        if (multipole_order > 0) {
+            f = 1e-7 / (r2 * r2 * r);
+            p[2] = (3 * z * z - r2);
+            p[1] = (3 * y * z);
+            p[0] = (3 * x * z);
+            // Assign the 3 dipole entries in the 1st 3 entries of the Q matrix
+            // for (int k; k < 3; ++k) Q[n_multipoles * n + k] = p[k];
+            for (k = 0; k < 3; ++k) Q[n_multipoles * n + k] = f * p[k];
+        }
+        // QUADRUPOLE
+        else if (multipole_order > 1) {
+            double z2 = z * z;
+            // Quad Field from the Cart version of Quad field SHs, by Stone et al
+            f = 1e-7 / (r2 * r2 * r2 * r);
+            p[0] = sqrt(3 / 2.0) * z * (-3 * r2 + 5 * z2);
+            p[1] = -sqrt(2.0) * x * (r2 - 5 * z2);
+            p[2] = -sqrt(2.0) * y * (r2 - 5 * z2);
+            p[3] = (5 / sqrt(2.0)) * (x * x - y * y) * z;
+            p[4] = 5 * sqrt(2.0) * x * y * z;
+
+            for (k = 0; k < 5; ++k) Q[n_multipoles * n + k + 3] = f * p[k];
+        }
+        // OCTUPOLE
+        else if (multipole_order > 2) {
+            // Oct Field from the Cartesian version of Octupole field SHs, by Stone et al
+            double r4 = r2 * r2;
+            double x2 = x * x;
+            double y2 = y * y;
+            double z2 = z * z;
+            f = 1e-7 / (r4 * r4 * r);
+            p[0] = (3 * r4 - 30 * r2 * z2 + 35 * (z2 * z2)) / sqrt(10.0);
+            p[1] = sqrt(15.0) * x * z * (-3 * r2 + 7 * z2) / 2;
+            p[2] = sqrt(15.0) * y * z * (-3 * r2 + 7 * z2) / 2;
+            p[3] = -sqrt(1.5) * (x2 - y2) * (r2 - 7 * z2);
+            p[4] = -sqrt(6.0) * x * y * (r2 - 7 * z2);
+            p[5] = 7 * x * (x2 - 3 * y2) * z / 2;
+            p[6] = -7 * y * (-3 * x2 + y2) * z / 2;
+
+            for (k = 0; k < 7; ++k) Q[n_multipoles * n + k + 8] = f * p[k];
+        }
+
+        free(p);
+    } // end for loop
+}
 
 /* Parameters
    ----------
@@ -21,6 +102,8 @@ void populate_matrix_cuda(double * dip_r,
                           unsigned long long Nsensors,
                           int multipole_order
                           ) {
+
+    int verbose = 1;
 
     // Total number of multipole values
     int n_multipoles = multipole_order * (multipole_order + 2);
@@ -69,7 +152,7 @@ void populate_matrix_cuda(double * dip_r,
     double total_db = (double) total_byte / (1024. * 1024.);
     double used_db = total_db - free_db;
     double Q_size_mb = (double) Q_bytes / (1024. * 1024.);
-    double dip_r_size_mb = (double) (3 * Ndip * sizeof(double)) / (1024. * 1024.);
+    double dip_r_size_mb = (double) (3 * Nsources * sizeof(double)) / (1024. * 1024.);
 
     // if(verbose == 0) {
     printf("------------ Nvidia GPU calculation info ------------\n");
@@ -101,81 +184,3 @@ void populate_matrix_cuda(double * dip_r,
     cudaFree(pos_r_dev);
 
 } // main function
-
-// Define magnetic constant in GPU
-__device__ double Cm = 1e-7;
-
-// The implementation here uses a grid-stride loop:
-// https://developer.nvidia.com/blog/cuda-pro-tip-write-flexible-kernels-grid-stride-loops/
-__global__ void pop_matrix_dipole(double * Q, double * dip_r, double * pos_r,
-                                  unsigned long long Nsources,
-                                  unsigned long long Nsensors,
-                                  int multipole_order, int n_multipoles,
-                                  int verbose) {
-
-
-    // The thread's unique number
-    int global_idx = blockIdx.x * blockDim.x + threadIdx.x;
-    int stride = gridDim.x * blockDim.x;
-    int threadsInBlock = blockDim.x;
-
-    for (unsigned long long n = global_idx; n < (Nsources * Nsensors); n += stride) {
-
-        unsigned long long i_sensor = n / N_sources;
-        unsigned long long i_source = n % N_sources;
-
-        double x = pos_r[3 * i_sensor    ] - dip_r[3 * i_source    ];
-        double y = pos_r[3 * i_sensor + 1] - dip_r[3 * i_source + 1];
-        double z = pos_r[3 * i_sensor + 2] - dip_r[3 * i_source + 2];
-        double r2 = x * x + y * y + z * z;
-        double r = sqrt(r2);
-
-        // Multipole field susceptibilities; we will re-use this matrix using
-        // the largest number of multipoles
-        double p[2 * multipole_order + 1];
-        int k;
-        double f;
-
-        // DIPOLE
-        if (multipole_order > 0) {
-            f = 1e-7 / (r2 * r2 * r);
-            p[2] = (3 * z * z - r2);
-            p[1] = (3 * y * z);
-            p[0] = (3 * x * z);
-            // Assign the 3 dipole entries in the 1st 3 entries of the Q matrix
-            // for (int k; k < 3; ++k) Q[n_multipoles * n + k] = p[k];
-            for (k = 0; k < 3; ++k) Q[n_multipoles * n + k] = f * p[k];
-        }
-        // QUADRUPOLE
-        else if (multipole_order > 1) {
-            double z2 = z * z;
-            // Quad Field from the Cart version of Quad field SHs, by Stone et al
-            f = 1e-7 / (r2 * r2 * r2 * r);
-            p[0] = sqrt(3 / 2) * z * (-3 * r2 + 5 * z2);
-            p[1] = -sqrt(2) * x * (r2 - 5 * z2);
-            p[2] = -sqrt(2) * y * (r2 - 5 * z2);
-            p[3] = (5 / sqrt(2)) * (x * x - y * y) * z;
-            p[4] = 5 * sqrt(2) * x * y * z;
-
-            for (k = 0; k < 5; ++k) Q[n_multipoles * n + k + 3] = f * p[k];
-        }
-        // OCTUPOLE
-        else if (multipole_order > 2) {
-            // Oct Field from the Cartesian version of Octupole field SHs, by Stone et al
-            double r4 = r2 * r2;
-            double x2 = x * x;
-            double y2 = y * y;
-            f = 1e-7 / (r4 * r4 * r);
-            p[0] = (3 * (r2 ** 2) - 30 * r2 * z2 + 35 * (z2 * z2)) / sqrt(10);
-            p[1] = sqrt(15) * x * z * (-3 * r2 + 7 * z2) / 2;
-            p[2] = sqrt(15) * y * z * (-3 * r2 + 7 * z2) / 2;
-            p[3] = -sqrt(1.5) * (x2 - y2) * (r2 - 7 * z2);
-            p[4] = -sqrt(6) * x * y * (r2 - 7 * z2);
-            p[5] = 7 * x * (x2 - 3 * y2) * z / 2;
-            p[6] = -7 * y * (-3 * x2 + y2) * z / 2;
-
-            for (k = 0; k < 7; ++k) Q[n_multipoles * n + k + 8] = f * p[k];
-        }
-
-    }
-}
