@@ -49,12 +49,16 @@ void populate_matrix_cuda(double * dip_r,
     // Launch kernel
     // Quadro RTX 6000: 4608 CUDA Cores
     // More refined matrix allocation of blocks if we use smaller n_threads, e.g. 8
+    // Use a N of threads multiple of 32 (multiple of warp size; see docs)
     int n_threads = 256;
     // Determine blocks and grid based on problem size:
     // We will use the number of dipoles and sensors only, Q is larger in size
     int n_blocks = ceil(float(Ndip_x_Nsensor / n_threads));
     dim3 grid(n_blocks, 1, 1);
     dim3 block(n_threads, 1, 1);
+    // TODO: should we use LESS blocks so that threads can compute
+    // more efficiently taking advantage of the grid-stride loop ?
+    // https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#thread-and-block-heuristics
 
     // Checking available memory in GPU:
     size_t free_byte;
@@ -101,6 +105,8 @@ void populate_matrix_cuda(double * dip_r,
 // Define magnetic constant in GPU
 __device__ double Cm = 1e-7;
 
+// The implementation here uses a grid-stride loop:
+// https://developer.nvidia.com/blog/cuda-pro-tip-write-flexible-kernels-grid-stride-loops/
 __global__ void pop_matrix_dipole(double * Q, double * dip_r, double * pos_r,
                                   unsigned long long Nsources,
                                   unsigned long long Nsensors,
