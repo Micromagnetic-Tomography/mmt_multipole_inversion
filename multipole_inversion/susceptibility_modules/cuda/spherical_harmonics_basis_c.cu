@@ -1,4 +1,4 @@
-#include "spherical_harmonics_basis_c.h"
+#include "spherical_harmonics_basis_c.cuh"
 #include <cmath>
 #include <math.h>
 #include <stdio.h>
@@ -25,6 +25,7 @@ __global__ void pop_matrix_dipole(double * Q, double * dip_r, double * pos_r,
 
         unsigned long long i_sensor = n / Nsources;
         unsigned long long i_source = n % Nsources;
+        // printf("n = %ld isens = %ld isource = %ld\n", n, i_sensor, i_source);
 
         double x = pos_r[3 * i_sensor    ] - dip_r[3 * i_source    ];
         double y = pos_r[3 * i_sensor + 1] - dip_r[3 * i_source + 1];
@@ -45,7 +46,6 @@ __global__ void pop_matrix_dipole(double * Q, double * dip_r, double * pos_r,
             p[1] = (3 * y * z);
             p[0] = (3 * x * z);
             // Assign the 3 dipole entries in the 1st 3 entries of the Q matrix
-            // for (int k; k < 3; ++k) Q[n_multipoles * n + k] = p[k];
             for (k = 0; k < 3; ++k) Q[n_multipoles * n + k] = f * p[k];
         }
         // QUADRUPOLE
@@ -136,7 +136,7 @@ void populate_matrix_cuda(double * dip_r,
     int n_threads = 256;
     // Determine blocks and grid based on problem size:
     // We will use the number of dipoles and sensors only, Q is larger in size
-    int n_blocks = ceil(float(Ndip_x_Nsensor / n_threads));
+    int n_blocks = ceil(Ndip_x_Nsensor / (float) n_threads);
     dim3 grid(n_blocks, 1, 1);
     dim3 block(n_threads, 1, 1);
     // TODO: should we use LESS blocks so that threads can compute
@@ -176,8 +176,11 @@ void populate_matrix_cuda(double * dip_r,
                                        verbose);
     cudaDeviceSynchronize();
 
-    // Copy G from the GPU to the host
+    // Copy Q from the GPU to the host
     cudaMemcpy(Q, Q_dev, Q_bytes, cudaMemcpyDeviceToHost);
+
+    for (int k = 0; k < Nsensors; ++k) printf("%d %f\n", k, pos_r[k]);
+    for (int k = 0; k < Ndip_x_Nsensor; ++k) printf("%f\n", Q[k]);
 
     cudaFree(Q_dev);
     cudaFree(dip_r_dev);
