@@ -35,7 +35,7 @@ __global__ void pop_matrix_dipole(double * Q, double * dip_r, double * pos_r,
 
         // Multipole field susceptibilities; we will re-use this matrix using
         // the largest number of multipoles
-        double * p = (double *) malloc(sizeof(double) * 2 * multipole_order + 1);
+        double * p = (double *) malloc(sizeof(double) * (2 * multipole_order + 1));
         int k;
         double f;
 
@@ -47,6 +47,7 @@ __global__ void pop_matrix_dipole(double * Q, double * dip_r, double * pos_r,
             p[0] = (3 * x * z);
             // Assign the 3 dipole entries in the 1st 3 entries of the Q matrix
             for (k = 0; k < 3; ++k) Q[n_multipoles * n + k] = f * p[k];
+            for (k = 0; k < 3; ++k) printf("%ld %f\n", n, Q[n_multipoles * n + k]);
         }
         // QUADRUPOLE
         else if (multipole_order > 1) {
@@ -143,6 +144,18 @@ void populate_matrix_cuda(double * dip_r,
     // more efficiently taking advantage of the grid-stride loop ?
     // https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#thread-and-block-heuristics
 
+    int blockSize;   // The launch configurator returned block size 
+    int minGridSize; // The minimum grid size needed to achieve the 
+                     // maximum occupancy for a full device launch 
+    int gridSize;    // The actual grid size needed, based on input size 
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, 
+                                       pop_matrix_dipole, 0, 0); 
+    // Round up according to array size 
+    gridSize = (Ndip_x_Nsensor + blockSize - 1) / blockSize; 
+    printf("Grid size = %d\n", gridSize);
+    printf("Min Grid size = %d\n", minGridSize);
+    printf("Block size = %d\n", blockSize);
+
     // Checking available memory in GPU:
     size_t free_byte;
     size_t total_byte;
@@ -179,8 +192,8 @@ void populate_matrix_cuda(double * dip_r,
     // Copy Q from the GPU to the host
     cudaMemcpy(Q, Q_dev, Q_bytes, cudaMemcpyDeviceToHost);
 
-    for (int k = 0; k < Nsensors; ++k) printf("%d %f\n", k, pos_r[k]);
-    for (int k = 0; k < Ndip_x_Nsensor; ++k) printf("%f\n", Q[k]);
+    // for (int k = 0; k < Nsensors; ++k) printf("%d %f\n", k, pos_r[k]);
+    // for (int k = 0; k < Ndip_x_Nsensor; ++k) printf("%f\n", Q[k]);
 
     cudaFree(Q_dev);
     cudaFree(dip_r_dev);
