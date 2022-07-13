@@ -1,4 +1,4 @@
-#include "spherical_harmonics_basis_c.cuh"
+#include "spherical_harmonics_basis.cuh"
 #include <cmath>
 #include <math.h>
 #include <stdio.h>

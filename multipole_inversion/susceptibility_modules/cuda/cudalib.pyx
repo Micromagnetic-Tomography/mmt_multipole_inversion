@@ -5,7 +5,7 @@ from cpython.mem cimport PyMem_Malloc, PyMem_Free
 
 # -----------------------------------------------------------------------------
 
-cdef extern from "spherical_harmonics_basis_c.cuh":
+cdef extern from "spherical_harmonics_basis.cuh":
 
     void SHB_populate_matrix_cuda(double * r_sources,
                                   double * r_sensors,
