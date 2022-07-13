@@ -35,7 +35,8 @@ __global__ void pop_matrix_dipole(double * Q, double * dip_r, double * pos_r,
 
         // Multipole field susceptibilities; we will re-use this matrix using
         // the largest number of multipoles
-        double * p = (double *) malloc(sizeof(double) * (2 * multipole_order + 1));
+        // double * p = (double *) malloc(sizeof(double) * (2 * multipole_order + 1));
+        double * p = new double[2 * multipole_order + 1];
         int k;
         double f;
 
@@ -47,7 +48,9 @@ __global__ void pop_matrix_dipole(double * Q, double * dip_r, double * pos_r,
             p[0] = (3 * x * z);
             // Assign the 3 dipole entries in the 1st 3 entries of the Q matrix
             for (k = 0; k < 3; ++k) Q[n_multipoles * n + k] = f * p[k];
-            for (k = 0; k < 3; ++k) printf("%ld %f\n", n, Q[n_multipoles * n + k]);
+
+            // for (k = 0; k < 3; ++k) printf("%ld isn = %ld isrc = %ld k = %d Q = %.5e p = %.5e f = %.5e  r2 = %.5e x = %.5e y = %.5e\n",
+            //                                n, i_sensor, i_source, k, Q[n_multipoles * n + k], p[k], f, r2, x, y);
         }
         // QUADRUPOLE
         else if (multipole_order > 1) {
@@ -81,7 +84,8 @@ __global__ void pop_matrix_dipole(double * Q, double * dip_r, double * pos_r,
             for (k = 0; k < 7; ++k) Q[n_multipoles * n + k + 8] = f * p[k];
         }
 
-        free(p);
+        // free(p);
+        delete [] p;
     } // end for loop
 }
 
@@ -130,31 +134,40 @@ void populate_matrix_cuda(double * dip_r,
     // Copy cuboids array from the host to the GPU
     cudaMemcpy(pos_r_dev, pos_r, sizeof(double) * 3 * Nsensors, cudaMemcpyHostToDevice);
 
-    // Launch kernel
-    // Quadro RTX 6000: 4608 CUDA Cores
-    // More refined matrix allocation of blocks if we use smaller n_threads, e.g. 8
-    // Use a N of threads multiple of 32 (multiple of warp size; see docs)
-    int n_threads = 256;
-    // Determine blocks and grid based on problem size:
-    // We will use the number of dipoles and sensors only, Q is larger in size
-    int n_blocks = ceil(Ndip_x_Nsensor / (float) n_threads);
-    dim3 grid(n_blocks, 1, 1);
-    dim3 block(n_threads, 1, 1);
-    // TODO: should we use LESS blocks so that threads can compute
-    // more efficiently taking advantage of the grid-stride loop ?
-    // https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#thread-and-block-heuristics
+    // // Launch kernel
+    // // Quadro RTX 6000: 4608 CUDA Cores
+    // // More refined matrix allocation of blocks if we use smaller n_threads, e.g. 8
+    // // Use a N of threads multiple of 32 (multiple of warp size; see docs)
+    // int blockSize = 256;
+    // // Determine blocks and grid based on problem size:
+    // // We will use the number of dipoles and sensors only, Q is larger in size
+    // int gridSize = ceil(Ndip_x_Nsensor / (float) n_threads);
+    // dim3 grid(gridSize, 1, 1);
+    // dim3 block(blockSize, 1, 1);
 
-    int blockSize;   // The launch configurator returned block size 
-    int minGridSize; // The minimum grid size needed to achieve the 
-                     // maximum occupancy for a full device launch 
-    int gridSize;    // The actual grid size needed, based on input size 
-    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, 
-                                       pop_matrix_dipole, 0, 0); 
-    // Round up according to array size 
-    gridSize = (Ndip_x_Nsensor + blockSize - 1) / blockSize; 
-    printf("Grid size = %d\n", gridSize);
-    printf("Min Grid size = %d\n", minGridSize);
-    printf("Block size = %d\n", blockSize);
+    // Here we use LESS blocks so that threads can compute more efficiently,
+    // taking advantage of the grid-stride loop and increasing occupancy
+    // https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#thread-and-block-heuristics
+    // https://developer.nvidia.com/blog/cuda-pro-tip-occupancy-api-simplifies-launch-configuration/
+    int blockSize;   // The launch configurator returned block size
+    int minGridSize; // The minimum grid size needed to achieve the
+                     // maximum occupancy for a full device launch (full GPU)
+    int gridSize;    // The actual grid size needed, based on input size
+    cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize,
+                                       pop_matrix_dipole, 0, 0);
+    // Round up according to array size
+    gridSize = (Ndip_x_Nsensor + blockSize - 1) / blockSize;
+    // If the processed array is larger than max thread capacity, use full GPU
+    // rather than a large number of blocks
+    gridSize = gridSize < minGridSize ? gridSize : minGridSize;
+
+    // GPU properties:
+    // int deviceId;
+    // cudaGetDevice(&deviceId);
+    // cudaDeviceProp props;
+    // cudaGetDeviceProperties(&props, deviceId);
+    // printf("MultiProcessor count = %d\n", props.multiProcessorCount);
+    // printf("Max threads per MP = %d\n", props.maxThreadsPerMultiProcessor);
 
     // Checking available memory in GPU:
     size_t free_byte;
@@ -174,8 +187,8 @@ void populate_matrix_cuda(double * dip_r,
     printf("                      total = %.4f\n", total_db);
     printf("Size of Q       (MB): %.4f\n", Q_size_mb);
     printf("Size of dip_r   (MB): %.4f\n", dip_r_size_mb);
-    printf("Blocks grid = %d\n", n_blocks);
-    printf("Threads per block = %d\n", n_threads);
+    printf("Grid size = %d\n", gridSize);
+    printf("Block size (n threads / block) = %d\n", blockSize);
     // printf("Sensor Matrix dims (rows x cols) = %d x %d\n", (n_multipoles) * Ndip_x_Nsensor);
     // }
 
@@ -183,10 +196,10 @@ void populate_matrix_cuda(double * dip_r,
     cudaMalloc((void**)&Q_dev, Q_bytes);
 
     // Populate matrix in GPU:
-    pop_matrix_dipole<<<grid, block>>>(Q_dev, dip_r_dev, pos_r_dev,
-                                       Nsources, Nsensors,
-                                       multipole_order, n_multipoles,
-                                       verbose);
+    pop_matrix_dipole<<<gridSize, blockSize>>>(Q_dev, dip_r_dev, pos_r_dev,
+                                               Nsources, Nsensors,
+                                               multipole_order, n_multipoles,
+                                               verbose);
     cudaDeviceSynchronize();
 
     // Copy Q from the GPU to the host
