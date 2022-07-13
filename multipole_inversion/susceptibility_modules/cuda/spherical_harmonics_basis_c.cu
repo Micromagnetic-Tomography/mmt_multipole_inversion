@@ -9,11 +9,11 @@
 
 // The implementation here uses a grid-stride loop:
 // https://developer.nvidia.com/blog/cuda-pro-tip-write-flexible-kernels-grid-stride-loops/
-__global__ void pop_matrix_dipole(double * Q, double * r_sources, double * r_sensors,
-                                  unsigned long long Nsources,
-                                  unsigned long long Nsensors,
-                                  int multipole_order, int n_multipoles,
-                                  int verbose) {
+__global__ void SHB_pop_matrix(double * Q, double * r_sources, double * r_sensors,
+                               unsigned long long Nsources,
+                               unsigned long long Nsensors,
+                               int multipole_order, int n_multipoles,
+                               int verbose) {
 
 
     // The thread's unique number
@@ -109,15 +109,14 @@ __global__ void pop_matrix_dipole(double * Q, double * r_sources, double * r_sen
    multipole_order
        1 -> dipole, 2 -> quadrupole , ...
  */
-void populate_matrix_cuda(double * r_sources,
-                          double * r_sensors,
-                          double * Q,
-                          unsigned long long Nsources,
-                          unsigned long long Nsensors,
-                          int multipole_order
-                          ) {
-
-    int verbose = 1;
+void SHB_populate_matrix_cuda(double * r_sources,
+                              double * r_sensors,
+                              double * Q,
+                              unsigned long long Nsources,
+                              unsigned long long Nsensors,
+                              int multipole_order,
+                              int verbose
+                              ) {
 
     // Total number of multipole values
     int n_multipoles = multipole_order * (multipole_order + 2);
@@ -163,7 +162,7 @@ void populate_matrix_cuda(double * r_sources,
                      // maximum occupancy for a full device launch (full GPU)
     int gridSize;    // The actual grid size needed, based on input size
     cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize,
-                                       pop_matrix_dipole, 0, 0);
+                                       SHB_pop_matrix, 0, 0);
     // Round up according to calculation size
     gridSize = (Nsrc_x_Nsns + blockSize - 1) / blockSize;
     // If the processed array is larger than max thread capacity, use full GPU
@@ -179,36 +178,36 @@ void populate_matrix_cuda(double * r_sources,
     // printf("Max threads per MP = %d\n", props.maxThreadsPerMultiProcessor);
 
     // Checking available memory in GPU:
-    size_t free_byte;
-    size_t total_byte;
-    cudaError_t cuda_status = cudaMemGetInfo(&free_byte, &total_byte);
-    double free_db = (double) free_byte / (1024. * 1024.);
-    // Quadro RTX 6000: total mem should be 24220.3125 Mb
-    double total_db = (double) total_byte / (1024. * 1024.);
-    double used_db = total_db - free_db;
-    double Q_size_mb = (double) Q_bytes / (1024. * 1024.);
-    double r_sources_size_mb = (double) (3 * Nsources * sizeof(double)) / (1024. * 1024.);
+    if(verbose == 1) {
+        size_t free_byte;
+        size_t total_byte;
+        cudaError_t cuda_status = cudaMemGetInfo(&free_byte, &total_byte);
+        double free_db = (double) free_byte / (1024. * 1024.);
+        // Quadro RTX 6000: total mem should be 24220.3125 Mb
+        double total_db = (double) total_byte / (1024. * 1024.);
+        double used_db = total_db - free_db;
+        double Q_size_mb = (double) Q_bytes / (1024. * 1024.);
+        double r_sources_size_mb = (double) (3 * Nsources * sizeof(double)) / (1024. * 1024.);
 
-    // if(verbose == 0) {
-    printf("------------ Nvidia GPU calculation info ------------\n");
-    printf("GPU Memory      (MB): free  = %.4f\n", free_db);
-    printf("                      used  = %.4f\n", used_db);
-    printf("                      total = %.4f\n", total_db);
-    printf("Size of Q       (MB): %.4f\n", Q_size_mb);
-    printf("Size of r_sources   (MB): %.4f\n", r_sources_size_mb);
-    printf("Grid size = %d\n", gridSize);
-    printf("Block size (n threads / block) = %d\n", blockSize);
-    // printf("Sensor Matrix dims (rows x cols) = %d x %d\n", (n_multipoles) * Nsrc_x_Nsns);
-    // }
+        printf("------------ Nvidia GPU calculation info ------------\n");
+        printf("GPU Memory      (MB): free  = %.4f\n", free_db);
+        printf("                      used  = %.4f\n", used_db);
+        printf("                      total = %.4f\n", total_db);
+        printf("Size of Q       (MB): %.4f\n", Q_size_mb);
+        printf("Size of r_sources   (MB): %.4f\n", r_sources_size_mb);
+        printf("Grid size = %d\n", gridSize);
+        printf("Block size (n threads / block) = %d\n", blockSize);
+        // printf("Sensor Matrix dims (rows x cols) = %d x %d\n", (n_multipoles) * Nsrc_x_Nsns);
+    }
 
     // Allocate G matrix
     cudaMalloc((void**)&Q_dev, Q_bytes);
 
     // Populate matrix in GPU:
-    pop_matrix_dipole<<<gridSize, blockSize>>>(Q_dev, r_sources_dev, r_sensors_dev,
-                                               Nsources, Nsensors,
-                                               multipole_order, n_multipoles,
-                                               verbose);
+    SHB_pop_matrix<<<gridSize, blockSize>>>(Q_dev, r_sources_dev, r_sensors_dev,
+                                            Nsources, Nsensors,
+                                            multipole_order, n_multipoles,
+                                            verbose);
     cudaDeviceSynchronize();
 
     // Copy Q from the GPU to the host
