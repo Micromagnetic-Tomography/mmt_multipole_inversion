@@ -5,11 +5,11 @@
 
 
 // Define magnetic constant in GPU
-__device__ double Cm = 1e-7;
+// __device__ double Cm = 1e-7;
 
 // The implementation here uses a grid-stride loop:
 // https://developer.nvidia.com/blog/cuda-pro-tip-write-flexible-kernels-grid-stride-loops/
-__global__ void pop_matrix_dipole(double * Q, double * dip_r, double * pos_r,
+__global__ void pop_matrix_dipole(double * Q, double * r_sources, double * r_sensors,
                                   unsigned long long Nsources,
                                   unsigned long long Nsensors,
                                   int multipole_order, int n_multipoles,
@@ -19,7 +19,7 @@ __global__ void pop_matrix_dipole(double * Q, double * dip_r, double * pos_r,
     // The thread's unique number
     int global_idx = blockIdx.x * blockDim.x + threadIdx.x;
     int stride = gridDim.x * blockDim.x;
-    int threadsInBlock = blockDim.x;
+    // int threadsInBlock = blockDim.x;
 
     for (unsigned long long n = global_idx; n < (Nsources * Nsensors); n += stride) {
 
@@ -27,9 +27,9 @@ __global__ void pop_matrix_dipole(double * Q, double * dip_r, double * pos_r,
         unsigned long long i_source = n % Nsources;
         // printf("n = %ld isens = %ld isource = %ld\n", n, i_sensor, i_source);
 
-        double x = pos_r[3 * i_sensor    ] - dip_r[3 * i_source    ];
-        double y = pos_r[3 * i_sensor + 1] - dip_r[3 * i_source + 1];
-        double z = pos_r[3 * i_sensor + 2] - dip_r[3 * i_source + 2];
+        double x = r_sensors[3 * i_sensor    ] - r_sources[3 * i_source    ];
+        double y = r_sensors[3 * i_sensor + 1] - r_sources[3 * i_source + 1];
+        double z = r_sensors[3 * i_sensor + 2] - r_sources[3 * i_source + 2];
         double r2 = x * x + y * y + z * z;
         double r = sqrt(r2);
 
@@ -89,19 +89,28 @@ __global__ void pop_matrix_dipole(double * Q, double * dip_r, double * pos_r,
     } // end for loop
 }
 
-/* Parameters
+/* Calculation of the magnetic susceptibility matrix Q using CUDA. This is
+   done using a 1D array. The Q array has
+   `n_mp * Nsources * Nsensors` elements with `n_mp` as the
+   number of multipole tensor components: `2 * n_mp + 1`. The GPU loops over
+   `Nsources * Nsensors` entries, where each GPU thread calculates all the
+   multipole tensor comps.
+
+   Parameters
    ----------
-   dip_r
-       N * 3 array with dipole positions
-   pos_r
-       M * 3 array with sensor positions
+   r_sources
+       N * 3 array with the positions of the magnetic sources
+   r_sensors
+       M * 3 array with the positions of the sensors (scan surface)
    Q
-       Matrix with the field susceptibilities
+       Array to store the field susceptibilities
+   Nsources, Nsensors
+       Number of magnetic point sources and scan sensors
    multipole_order
        1 -> dipole, 2 -> quadrupole , ...
  */
-void populate_matrix_cuda(double * dip_r,
-                          double * pos_r,
+void populate_matrix_cuda(double * r_sources,
+                          double * r_sensors,
                           double * Q,
                           unsigned long long Nsources,
                           unsigned long long Nsensors,
@@ -115,7 +124,7 @@ void populate_matrix_cuda(double * dip_r,
 
     unsigned long long Qsize = n_multipoles * Nsources * Nsensors;
     // Each thread will compute `n_multipoles` elements
-    unsigned long long Ndip_x_Nsensor = Nsources * Nsensors;
+    unsigned long long Nsrc_x_Nsns = Nsources * Nsensors;
 
     size_t Q_bytes = sizeof(double) * Qsize;
     // Manual mem allocation: G in GPU and cuboids_dev in GPU
@@ -124,15 +133,15 @@ void populate_matrix_cuda(double * dip_r,
     // (allocate in GPU if enough memory, see below)
     // cudaMalloc((void**)&Q_dev, Q_bytes);
 
-    double *dip_r_dev;
-    cudaMalloc((void**)&dip_r_dev, sizeof(double) * 3 * Nsources);
+    double *r_sources_dev;
+    cudaMalloc((void**)&r_sources_dev, sizeof(double) * 3 * Nsources);
     // Copy cuboids array from the host to the GPU
-    cudaMemcpy(dip_r_dev, dip_r, sizeof(double) * 3 * Nsources, cudaMemcpyHostToDevice);
+    cudaMemcpy(r_sources_dev, r_sources, sizeof(double) * 3 * Nsources, cudaMemcpyHostToDevice);
 
-    double *pos_r_dev;
-    cudaMalloc((void**)&pos_r_dev, sizeof(double) * 3 * Nsensors);
+    double *r_sensors_dev;
+    cudaMalloc((void**)&r_sensors_dev, sizeof(double) * 3 * Nsensors);
     // Copy cuboids array from the host to the GPU
-    cudaMemcpy(pos_r_dev, pos_r, sizeof(double) * 3 * Nsensors, cudaMemcpyHostToDevice);
+    cudaMemcpy(r_sensors_dev, r_sensors, sizeof(double) * 3 * Nsensors, cudaMemcpyHostToDevice);
 
     // // Launch kernel
     // // Quadro RTX 6000: 4608 CUDA Cores
@@ -141,7 +150,7 @@ void populate_matrix_cuda(double * dip_r,
     // int blockSize = 256;
     // // Determine blocks and grid based on problem size:
     // // We will use the number of dipoles and sensors only, Q is larger in size
-    // int gridSize = ceil(Ndip_x_Nsensor / (float) n_threads);
+    // int gridSize = ceil(Nsrc_x_Nsns / (float) n_threads);
     // dim3 grid(gridSize, 1, 1);
     // dim3 block(blockSize, 1, 1);
 
@@ -155,8 +164,8 @@ void populate_matrix_cuda(double * dip_r,
     int gridSize;    // The actual grid size needed, based on input size
     cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize,
                                        pop_matrix_dipole, 0, 0);
-    // Round up according to array size
-    gridSize = (Ndip_x_Nsensor + blockSize - 1) / blockSize;
+    // Round up according to calculation size
+    gridSize = (Nsrc_x_Nsns + blockSize - 1) / blockSize;
     // If the processed array is larger than max thread capacity, use full GPU
     // rather than a large number of blocks
     gridSize = gridSize < minGridSize ? gridSize : minGridSize;
@@ -178,7 +187,7 @@ void populate_matrix_cuda(double * dip_r,
     double total_db = (double) total_byte / (1024. * 1024.);
     double used_db = total_db - free_db;
     double Q_size_mb = (double) Q_bytes / (1024. * 1024.);
-    double dip_r_size_mb = (double) (3 * Nsources * sizeof(double)) / (1024. * 1024.);
+    double r_sources_size_mb = (double) (3 * Nsources * sizeof(double)) / (1024. * 1024.);
 
     // if(verbose == 0) {
     printf("------------ Nvidia GPU calculation info ------------\n");
@@ -186,17 +195,17 @@ void populate_matrix_cuda(double * dip_r,
     printf("                      used  = %.4f\n", used_db);
     printf("                      total = %.4f\n", total_db);
     printf("Size of Q       (MB): %.4f\n", Q_size_mb);
-    printf("Size of dip_r   (MB): %.4f\n", dip_r_size_mb);
+    printf("Size of r_sources   (MB): %.4f\n", r_sources_size_mb);
     printf("Grid size = %d\n", gridSize);
     printf("Block size (n threads / block) = %d\n", blockSize);
-    // printf("Sensor Matrix dims (rows x cols) = %d x %d\n", (n_multipoles) * Ndip_x_Nsensor);
+    // printf("Sensor Matrix dims (rows x cols) = %d x %d\n", (n_multipoles) * Nsrc_x_Nsns);
     // }
 
     // Allocate G matrix
     cudaMalloc((void**)&Q_dev, Q_bytes);
 
     // Populate matrix in GPU:
-    pop_matrix_dipole<<<gridSize, blockSize>>>(Q_dev, dip_r_dev, pos_r_dev,
+    pop_matrix_dipole<<<gridSize, blockSize>>>(Q_dev, r_sources_dev, r_sensors_dev,
                                                Nsources, Nsensors,
                                                multipole_order, n_multipoles,
                                                verbose);
@@ -205,11 +214,11 @@ void populate_matrix_cuda(double * dip_r,
     // Copy Q from the GPU to the host
     cudaMemcpy(Q, Q_dev, Q_bytes, cudaMemcpyDeviceToHost);
 
-    // for (int k = 0; k < Nsensors; ++k) printf("%d %f\n", k, pos_r[k]);
-    // for (int k = 0; k < Ndip_x_Nsensor; ++k) printf("%f\n", Q[k]);
+    // for (int k = 0; k < Nsensors; ++k) printf("%d %f\n", k, r_sensors[k]);
+    // for (int k = 0; k < Nsrc_x_Nsns; ++k) printf("%f\n", Q[k]);
 
     cudaFree(Q_dev);
-    cudaFree(dip_r_dev);
-    cudaFree(pos_r_dev);
+    cudaFree(r_sources_dev);
+    cudaFree(r_sensors_dev);
 
 } // main function
