@@ -242,8 +242,8 @@ class MultipoleInversion(object):
             if HASCUDA is False:
                 raise Exception('The cuda method is not available. Stopping calculation')
 
-            sus_cudalib.SHB_populate_matrix(self.particle_positions.reshape(-1),
-                                            scan_positions.reshape(-1), 
+            sus_cudalib.SHB_populate_matrix(self.particle_positions,
+                                            scan_positions, 
                                             self.Q,
                                             self.N_particles, self.N_sensors,
                                             mp_order[self.expansion_limit],

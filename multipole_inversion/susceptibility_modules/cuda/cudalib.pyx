@@ -18,8 +18,10 @@ cdef extern from "spherical_harmonics_basis.cuh":
 
 # -----------------------------------------------------------------------------
 
-def SHB_populate_matrix(double [:] r_sources, double [:] r_sensors,
-                        double [:] Q,
+# r_*, and Q are passed as a 2D arrays
+def SHB_populate_matrix(double [:, :] r_sources,
+                        double [:, :] r_sensors,
+                        double [:, :] Q,
                         unsigned long long Nsources,
                         unsigned long long Nsensors,
                         int multipole_order,
@@ -27,6 +29,6 @@ def SHB_populate_matrix(double [:] r_sources, double [:] r_sensors,
                         ):
 
     # Call the C function
-    SHB_populate_matrix_cuda(&r_sources[0], &r_sensors[0], &Q[0],
+    SHB_populate_matrix_cuda(&r_sources[0, 0], &r_sensors[0, 0], &Q[0, 0],
                              Nsources, Nsensors, multipole_order, verbose)
 
