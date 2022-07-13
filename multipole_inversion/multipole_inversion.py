@@ -11,7 +11,16 @@ import scipy.linalg as slin
 #     warnings.warn('Could not import Tensorflow')
 from pathlib import Path
 
+# CUDA modules for populating the suscept matrix (if available)
+try:
+    from .susceptibility_modules.cuda import cudalib as sus_cudalib
+    HASCUDA = True
+except ImportError:
+    HASCUDA = False
+
+# Suscept modules using Numba:
 from . import susceptibility_modules as sus_mods
+
 from typing import Optional
 from typing import Literal  # Working with Python >3.8
 from typing import Union    # Working with Python >3.8
@@ -194,9 +203,9 @@ class MultipoleInversion(object):
 
         if self.verbose:
             print(f'Scanning array size = {len(self.Sx_range)} x {len(self.Sy_range)}')
-        self.N_Points = self.Nx_surf * self.Ny_surf
+        self.N_sensors = self.Nx_surf * self.Ny_surf
 
-    def generate_forward_matrix(self):
+    def generate_forward_matrix(self, optimization='numba'):
         """
         Generate the forward matrix adding the field contribution from all
         the particles for every grid point at the scan surface. The field is
@@ -204,6 +213,11 @@ class MultipoleInversion(object):
         the multipole expansion up to the order specified by
         self.expansion_limit
 
+        Parameters
+        ----------
+        optimization
+            The method to optimize the calculation of the matrix elements:
+            `numba` or `cuda`
         """
         # Moment vec m = [mx[0], my[0], mz[0], ... , mx[N-1], my[N-1], mz[N-1]]
         # Position vector  p = [(x[0], y[0]),  ... , x[
@@ -211,32 +225,45 @@ class MultipoleInversion(object):
         # Q[i, j] =
 
         # The the total flux array according to the specified expansion limit
-        self.Q = np.zeros(shape=(self.N_Points,
+        self.Q = np.zeros(shape=(self.N_sensors,
                                  self._N_cols * self.N_particles))
 
         # print('pos array:', particle_positions.shape)
         t0 = time.time()
 
         # Create all the positions of the scan grid
-        scan_positions = np.ones((self.N_Points, 3))
+        scan_positions = np.ones((self.N_sensors, 3))
         X_pos, Y_pos = np.meshgrid(self.Sx_range, self.Sy_range)
         scan_positions[:, :2] = np.stack((X_pos, Y_pos), axis=2).reshape(-1, 2)
         scan_positions[:, 2] *= self.Hz
+
+        if optimization == 'cuda':
+            mp_order = {'dipole': 1, 'quadrupole': 2, 'octupole': 3}
+            if HASCUDA is False:
+                raise Exception('The cuda method is not available. Stopping calculation')
+
+            sus_cudalib.SHB_populate_matrix(self.particle_positions.reshape(-1),
+                                            scan_positions.reshape(-1), 
+                                            self.Q,
+                                            self.N_particles, self.N_sensors,
+                                            mp_order[self.expansion_limit],
+                                            self.verbose)
 
         # For all the particles, whose positions are stored in the pos array
         # (N_particles x 3), compute the dipole (3 terms), quadrupole (5 terms)
         # or octupole (7 terms) contributions. Here we populate the Q array
         # using the numba-optimised susceptibility functions
-        self.sus_mod.dipole_Bz_sus(self.particle_positions, scan_positions,
-                                   self.Q, self._N_cols)
-        if self.expansion_limit in ['quadrupole', 'octupole']:
-            self.sus_mod.quadrupole_Bz_sus(self.particle_positions,
-                                           scan_positions,
-                                           self.Q, self._N_cols)
-        if self.expansion_limit in ['octupole']:
-            self.sus_mod.octupole_Bz_sus(self.particle_positions,
-                                         scan_positions,
-                                         self.Q, self._N_cols)
+        elif optimization == 'numba':
+            self.sus_mod.dipole_Bz_sus(self.particle_positions, scan_positions,
+                                       self.Q, self._N_cols)
+            if self.expansion_limit in ['quadrupole', 'octupole']:
+                self.sus_mod.quadrupole_Bz_sus(self.particle_positions,
+                                               scan_positions,
+                                               self.Q, self._N_cols)
+            if self.expansion_limit in ['octupole']:
+                self.sus_mod.octupole_Bz_sus(self.particle_positions,
+                                             scan_positions,
+                                             self.Q, self._N_cols)
 
         t1 = time.time()
         if self.verbose:
@@ -251,7 +278,9 @@ class MultipoleInversion(object):
         Computes the multipole inversion. Results are saved in the
         `inv_multipole_moments` and `inv_Bz_array` variables. This method
         requires the generation of the `Q` matrix, hence the
-        `generate_forward_matrix` method is called if `Q` is `None`.
+        `generate_forward_matrix` method using `numba` is called if `Q` has not
+        been set. To optimize the calculation of `Q`, call the function before
+        this method. 
 
         Parameters
         ----------
@@ -288,7 +317,7 @@ class MultipoleInversion(object):
             raise TypeError(f'Method {method} not implemented')
 
         # print('Bz_data shape OLD:', Bz_array.shape)
-        Bz_Data = np.reshape(self.Bz_array, self.N_Points, order='C')
+        Bz_Data = np.reshape(self.Bz_array, self.N_sensors, order='C')
         # print('Bz_data shape:', Bz_Data.shape)
         # print('IQ shape:', IQ.shape)
         self.inv_multipole_moments = np.dot(self.IQ, Bz_Data)

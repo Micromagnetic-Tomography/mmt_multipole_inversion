@@ -121,6 +121,8 @@ class MagneticSample(object):
             Sample thickness in m
         scan_origin
             2-sequence to specify the origin of the scan grid
+        bz_field_module
+            Specify the basis to generate the Bz multipole fields
 
         Notes
         -----
