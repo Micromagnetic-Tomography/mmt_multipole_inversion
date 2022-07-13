@@ -151,7 +151,7 @@ if CUDA:
 
     extensions.append(
         Extension("multipole_inversion.susceptibility_modules.cuda.cudalib",
-                  sources=["multipole_inversion/susceptibility_modules/cuda/susceptibility_cudalib.pyx",
+                  sources=["multipole_inversion/susceptibility_modules/cuda/cudalib.pyx",
                            "multipole_inversion/susceptibility_modules/cuda/spherical_harmonics_basis.cu"],
                   # library_dirs=[CUDA['lib64']],
                   libraries=['cudart'],
