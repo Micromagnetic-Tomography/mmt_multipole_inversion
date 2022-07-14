@@ -198,6 +198,7 @@ void SHB_populate_matrix_cuda(double * r_sources,
         printf("Grid size = %d\n", gridSize);
         printf("Block size (n threads / block) = %d\n", blockSize);
         // printf("Sensor Matrix dims (rows x cols) = %d x %d\n", (n_multipoles) * Nsrc_x_Nsns);
+        printf("-----------------------------------------------------\n");
     }
 
     // Allocate G matrix
