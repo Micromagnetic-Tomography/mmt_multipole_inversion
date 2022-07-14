@@ -15,6 +15,7 @@ from Cython.Build import cythonize
 import numpy
 import os
 from os.path import join as pjoin
+from pathlib import Path
 
 # -----------------------------------------------------------------------------
 # CUDA SPECIFIC FUNCTIONS
@@ -148,7 +149,6 @@ if CUDA:
     #                                     for graphics) but this might slightly affect performance
     com_args['nvcc'] = ['-arch=sm_75', '--fmad=false', '--ptxas-options=-v',
                         '-c', '--compiler-options', "'-fPIC'"]
-
     extensions.append(
         Extension("multipole_inversion.susceptibility_modules.cuda.cudalib",
                   sources=["multipole_inversion/susceptibility_modules/cuda/cudalib.pyx",
@@ -166,8 +166,8 @@ if CUDA:
 # -----------------------------------------------------------------------------
 
 if CUDA is False:
-    print("CUDAHOME env variable or CUDA not found: skipping cuda extensions")
-    # cmdclass = {'build_ext': build_ext}
+    print("\nCUDAHOME env variable or CUDA not found: skipping cuda extensions")
+    cmdclass = {'build_ext': build_ext}
 else:
     cmdclass = {'build_ext': custom_build_ext}
 
