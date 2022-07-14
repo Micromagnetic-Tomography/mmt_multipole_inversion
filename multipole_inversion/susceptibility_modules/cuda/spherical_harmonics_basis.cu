@@ -52,21 +52,23 @@ __global__ void SHB_pop_matrix(double * Q, double * r_sources, double * r_sensor
             // for (k = 0; k < 3; ++k) printf("%ld isn = %ld isrc = %ld k = %d Q = %.5e p = %.5e f = %.5e  r2 = %.5e x = %.5e y = %.5e\n",
             //                                n, i_sensor, i_source, k, Q[n_multipoles * n + k], p[k], f, r2, x, y);
         }
+
         // QUADRUPOLE
-        else if (multipole_order > 1) {
+        if (multipole_order > 1) {
             double z2 = z * z;
             // Quad Field from the Cart version of Quad field SHs, by Stone et al
             f = 1e-7 / (r2 * r2 * r2 * r);
-            p[0] = sqrt(3 / 2.0) * z * (-3 * r2 + 5 * z2);
+            p[0] = sqrt(3.0 / 2.0) * z * (-3 * r2 + 5 * z2);
             p[1] = -sqrt(2.0) * x * (r2 - 5 * z2);
             p[2] = -sqrt(2.0) * y * (r2 - 5 * z2);
-            p[3] = (5 / sqrt(2.0)) * (x * x - y * y) * z;
-            p[4] = 5 * sqrt(2.0) * x * y * z;
+            p[3] = (5.0 / sqrt(2.0)) * (x * x - y * y) * z;
+            p[4] = 5.0 * sqrt(2.0) * x * y * z;
 
             for (k = 0; k < 5; ++k) Q[n_multipoles * n + k + 3] = f * p[k];
         }
+
         // OCTUPOLE
-        else if (multipole_order > 2) {
+        if (multipole_order > 2) {
             // Oct Field from the Cartesian version of Octupole field SHs, by Stone et al
             double r4 = r2 * r2;
             double x2 = x * x;
