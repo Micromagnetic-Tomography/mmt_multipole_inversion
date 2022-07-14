@@ -2,10 +2,13 @@ import numpy as np
 import multipole_inversion.magnetic_sample as msp
 import multipole_inversion.multipole_inversion as minv
 from pathlib import Path
+import pytest
 
 
 TEST_SAVEDIR = Path('TEST_TMP')
 TEST_SAVEDIR.mkdir(exist_ok=True)
+
+LIMIT_params = ['dipole', 'quadrupole', 'octupole']
 
 
 def fw_model_fun():
@@ -54,7 +57,8 @@ def fw_model_fun():
     sample.save_data(filename='fw_model_test_inversion', basedir=TEST_SAVEDIR)
 
 
-def test_inversion_single_dipole_numba(limit='dipole'):
+@pytest.mark.parametrize("limit", LIMIT_params, ids=['dip', 'quad', 'oct'])
+def test_inversion_single_dipole_numba(limit):
 
     # Generate arrays from the Forward model using a single dipole source
     fw_model_fun()
@@ -85,9 +89,11 @@ def test_inversion_single_dipole_numba(limit='dipole'):
         assert rel_diff < 1e-6
 
 
-def test_compare_cuda_numba_populate_array(limit='dipole'):
+@pytest.mark.parametrize("limit", LIMIT_params, ids=['dip', 'quad', 'oct'])
+def test_compare_cuda_numba_populate_array(limit):
     """
     """
+
     inv_model = minv.MultipoleInversion(
             TEST_SAVEDIR / 'MetaDict_fw_model_test_inversion.json',
             TEST_SAVEDIR / 'MagneticSample_fw_model_test_inversion.npz',
@@ -113,19 +119,26 @@ def test_compare_cuda_numba_populate_array(limit='dipole'):
     # print('Max', np.max(np.abs(Q_cuda - Q_numba)))
 
     # Absolute error using L-inf norm of the difference matrix
+    # The differences increase for higher order mp susceptbs since the prefactor
+    # makes large numerators: dipole ~ 1 / r^5, quadrupole ~ 1 / r^7, ...
+    TOLS = {'dipole': 5e-7, 'quadrupole': 5e-2, 'octupole': 5e-2}
     inf_norm_abs_err = np.linalg.norm(Q_cuda - Q_numba, ord=np.inf)
     print('Infinity norm', inf_norm_abs_err)
-    assert inf_norm_abs_err < 5e-7
+    assert inf_norm_abs_err < TOLS[limit]
 
     # Notice that matrix values that are small, ~1e-8, differ significantly,
     # thus the relative error of these elements is super large
     # We need to check if this is a numerical error approx
-    # idxs = np.where(np.abs(Q_cuda - Q_numba) / np.abs(Q_numba) > 1e-5)
+    # idxs = np.where(np.abs(Q_cuda - Q_numba) > 1e-2)
+    # print(idxs)
+    # print(np.abs(Q_cuda - Q_numba)[109:112, :])
     # print(Q_cuda[idxs][:10])
     # print(Q_numba[idxs][:10])
+    # print(np.abs(Q_cuda - Q_numba)[idxs][:10])
 
 
-def test_inversion_single_dipole_cuda(limit='dipole'):
+@pytest.mark.parametrize("limit", LIMIT_params, ids=['dip', 'quad', 'oct'])
+def test_inversion_single_dipole_cuda(limit):
 
     # Generate arrays from the Forward model using a single dipole source
     fw_model_fun()
@@ -160,8 +173,12 @@ def test_inversion_single_dipole_cuda(limit='dipole'):
 if __name__ == '__main__':
     # fw_model_fun()
 
-    # test_inversion_single_dipole(limit='dipole')
-    # test_inversion_single_dipole(limit='quadrupole')
-    # test_inversion_single_dipole(limit='octupole')
+    test_inversion_single_dipole(limit='dipole')
+    test_inversion_single_dipole(limit='quadrupole')
+    test_inversion_single_dipole(limit='octupole')
 
-    test_compare_cuda_numba_populate_array()
+    test_compare_cuda_numba_populate_array(limit='octupole')
+
+    test_inversion_single_dipole_cuda(limit='dipole')
+    test_inversion_single_dipole_cuda(limit='quadrupole')
+    test_inversion_single_dipole(limit='octupole')
