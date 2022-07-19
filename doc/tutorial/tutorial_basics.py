@@ -6,9 +6,9 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.6.0
+#       jupytext_version: 1.14.0
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: Python 3 (ipykernel)
 #     language: python
 #     name: python3
 # ---
@@ -33,9 +33,9 @@ import sys
 
 # %%
 # Load the libraries for the calculation of dipole fields
-import multipole_inversion as minv
-import multipole_inversion.multipole_inversion as minv_mpi
-import multipole_inversion.magnetic_sample as msp
+import mmt_multipole_inversion as minv
+import mmt_multipole_inversion.multipole_inversion as minv_mpi
+import mmt_multipole_inversion.magnetic_sample as msp
 
 
 # %%

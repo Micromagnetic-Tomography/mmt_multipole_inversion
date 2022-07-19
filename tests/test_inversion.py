@@ -1,6 +1,6 @@
 import numpy as np
-import multipole_inversion.magnetic_sample as msp
-import multipole_inversion.multipole_inversion as minv
+import mmt_multipole_inversion.magnetic_sample as msp
+import mmt_multipole_inversion.multipole_inversion as minv
 from pathlib import Path
 
 
@@ -73,7 +73,7 @@ def test_inversion_single_dipole(limit='dipole'):
             rel_diff /= abs(expected_magnetization[i])
         # print(rel_diff)
         # print(inv_model.inv_multipole_moments[0][i])
-        assert rel_diff < 1e-6
+        assert rel_diff < 1e-5
 
 
 if __name__ == '__main__':

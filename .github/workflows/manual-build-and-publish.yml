@@ -1,8 +1,6 @@
 name: Manual build and publish
 
-on:
-  workflow_dispatch:
-    branches: [ test_gh_actions ]
+on: workflow_dispatch
 
 jobs:
   build_packages:
