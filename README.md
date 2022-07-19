@@ -13,11 +13,11 @@ potential of the sources. The mathematical background of this method and its
 application to experimental data of a synthetic sample is developed in
 
 D. Cortés-Ortuño, K. Fabian, L. V. de Groot
-![Single Particle Multipole Expansions From Micromagnetic Tomography](https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/2021GC009663)
+[Single Particle Multipole Expansions From Micromagnetic Tomography](https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/2021GC009663)
 Geochemistry, Geophysics, Geosystems **22(4)**, e2021GC009663 (2021)
-DOI: ![https://doi.org/10.1029/2021GC009663](https://doi.org/10.1029/2021GC009663)
+DOI: [https://doi.org/10.1029/2021GC009663](https://doi.org/10.1029/2021GC009663)
 
-This library is developed as part of the ![Mimatom / MMT](https://mimatom.org/)
+This library is developed as part of the [Mimatom / MMT](https://mimatom.org/)
 project.
 
 # Library
