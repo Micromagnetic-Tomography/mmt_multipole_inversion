@@ -128,7 +128,7 @@ link_args = ['-fopenmp']
 
 extensions = []
 # extensions = [
-#     Extension("multipole_inversion.susceptibility_modules...",
+#     Extension("mmt_multipole_inversion.susceptibility_modules...",
 #               ["",
 #                ""],
 #               extra_compile_args=com_args,
@@ -150,9 +150,9 @@ if CUDA:
     com_args['nvcc'] = ['-arch=sm_75', '--fmad=false', '--ptxas-options=-v',
                         '-c', '--compiler-options', "'-fPIC'"]
     extensions.append(
-        Extension("multipole_inversion.susceptibility_modules.cuda.cudalib",
-                  sources=["multipole_inversion/susceptibility_modules/cuda/cudalib.pyx",
-                           "multipole_inversion/susceptibility_modules/cuda/spherical_harmonics_basis.cu"],
+        Extension("mmt_multipole_inversion.susceptibility_modules.cuda.cudalib",
+                  sources=["mmt_multipole_inversion/susceptibility_modules/cuda/cudalib.pyx",
+                           "mmt_multipole_inversion/susceptibility_modules/cuda/spherical_harmonics_basis.cu"],
                   # library_dirs=[CUDA['lib64']],
                   libraries=['cudart'],
                   language='c++',

@@ -7,13 +7,13 @@ license = "MIT"
 readme = "README.md"
 
 packages = [
-    {include = "multipole_inversion"}
+    {include = "mmt_multipole_inversion"}
 ]
 
 include = [
     # CUDA/C extensions must be included in the wheel distributions
-    {path = "multipole_inversion/susceptibility_modules/cuda/*.so", format = "wheel"},
-    {path = "multipole_inversion/susceptibility_modules/cuda/*.pyd", format = "wheel"},
+    {path = "mmt_multipole_inversion/susceptibility_modules/cuda/*.so", format = "wheel"},
+    {path = "mmt_multipole_inversion/susceptibility_modules/cuda/*.pyd", format = "wheel"},
 ]
 
 [tool.poetry.build]
