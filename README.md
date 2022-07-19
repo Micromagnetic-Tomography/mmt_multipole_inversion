@@ -44,13 +44,23 @@ are documented in the tutorial yet.
 
 # Installation
 
-Via `pip -e .` from the base directory or using `poetry` (recommended for
-development).
+Via PyPI or from this repository using `pip .` or `poetry install` or `poetry
+build` (which can be used with `pip`). Poetry is recommended for development.
+
+## CUDA
+
+This library contains an optional Nvidia CUDA library to populate the forward
+matrix in the `multipole_inversion` code. To build this library you need to set
+the `CUDAHOME` or `CUDA_PATH` environment variables to the location of CUDA in
+your system. Alternatively, the `nvcc` compiler path can be set in the `PATH`
+variable. The it is only necessary to install or build the library using
+`poetry install` or `poetry build`.
 
 # Tutorial
 
 For now you can visualize the Jupyter notebooks from the `jupytext` scripts in
-the `doc/tutorial/` folder. These notebooks can also be generated from their associated `jupytext` script, for example,
+the `doc/tutorial/` folder. These notebooks can also be generated from their
+associated `jupytext` script, for example,
 
 ```
 jupytext --to notebook multipoles_inversion_test.py 
