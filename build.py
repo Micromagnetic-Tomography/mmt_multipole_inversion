@@ -1,8 +1,36 @@
-# This build file is based on: https://github.com/rmcgibbo/npcuda-example
+# This build file for building cuda libraries using Cython is based on:
+#   https://github.com/rmcgibbo/npcuda-example
+# which holds a BSD2 license
+# -----------------------------------------------------------------------------
 # Copyright (c) 2014, Robert T. McGibbon and the Authors
-# but has modifications to be used with Poetry build system
+# All rights reserved.
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+# this list of conditions and the following disclaimer in the documentation
+# and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+# BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
+# IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+
+# This version has modifications to be used with the Poetry build system
+# ans is licensed under the MIT license (see project's LICENSE file)
 # Copyright (c) 2022, David Cortés-Ortuño and the Authors
 # -----------------------------------------------------------------------------
+
 import setuptools
 from setuptools.extension import Extension
 from setuptools.dist import Distribution
@@ -16,6 +44,7 @@ import numpy
 import os
 from os.path import join as pjoin
 from pathlib import Path
+
 
 # -----------------------------------------------------------------------------
 # CUDA SPECIFIC FUNCTIONS
@@ -36,49 +65,53 @@ def locate_cuda():
     Returns a dict with keys 'home', 'nvcc', 'include', and 'lib64'
     and values giving the absolute path to each directory.
 
-    Starts by looking for the CUDAHOME env variable. If not found, everything
-    is based on finding 'nvcc' in the PATH.
+    Starts by looking for the CUDAHOME and CUDA_PATH env variable. If not
+    found, everything is based on finding 'nvcc' in the PATH variable.
     """
-
+    nvcc = None
     # First check if the CUDAHOME env variable is in use
-    if 'CUDAHOME' in os.environ:
-        home = os.environ['CUDAHOME']
-        nvcc = pjoin(home, 'bin', 'nvcc')
+    for cudaenv in ('CUDAHOME', 'CUDA_PATH'):
+        if cudaenv in os.environ:
+            home = os.environ[cudaenv]
+            nvcc = pjoin(home, 'bin', 'nvcc')
     else:
         # otherwise, search the PATH for NVCC
         nvcc = find_in_path('nvcc', os.environ['PATH'])
         if nvcc is None:
-            # raise EnvironmentError('The nvcc binary could not be '
-            #     'located in your $PATH. Either add it to your path, or set $CUDAHOME')
+            # print(
+            #     'The nvcc binary could not be located in'
+            #     ' your $PATH. Either add it to your path, or set $CUDAHOME')
             return False
 
         home = os.path.dirname(os.path.dirname(nvcc))
 
-    cudaconfig = {'home':home, 'nvcc':nvcc,
+    cudaconfig = {'home': home, 'nvcc': nvcc,
                   'include': pjoin(home, 'include'),
                   'lib64': pjoin(home, 'lib64')}
 
     for k, v in cudaconfig.items():
         if not os.path.exists(v):
-            # raise EnvironmentError('The CUDA %s path could not be located in %s' % (k, v))
+            # print('The CUDA %s path could not be located in %s' % (k, v))
             return False
 
     return cudaconfig
 
+
 CUDA = locate_cuda()
 # print(CUDA)
+
 
 def customize_compiler_for_nvcc(self):
     """Inject deep into distutils to customize how the dispatch
     to gcc/nvcc works.
-    
+
     If you subclass UnixCCompiler, it's not trivial to get your subclass
     injected in, and still have the right customizations (i.e.
     distutils.sysconfig.customize_compiler) run on it. So instead of going
     the OO route, I have this. Note, it's like a weird functional
     subclassing going on.
     """
-    
+
     # tell the compiler it can processes .cu
     self.src_extensions.append('.cu')
 
@@ -112,6 +145,7 @@ class custom_build_ext(build_ext):
     def build_extensions(self):
         customize_compiler_for_nvcc(self.compiler)
         build_ext.build_extensions(self)
+
 
 # -----------------------------------------------------------------------------
 # Compilation of CPP modules
@@ -157,7 +191,7 @@ if CUDA:
                   libraries=['cudart'],
                   language='c++',
                   extra_compile_args=com_args,
-                  include_dirs = [numpy.get_include(), CUDA['include'], '.'],
+                  include_dirs=[numpy.get_include(), CUDA['include'], '.'],
                   library_dirs=[CUDA['lib64']],
                   runtime_library_dirs=[CUDA['lib64']]
         )
@@ -166,7 +200,7 @@ if CUDA:
 # -----------------------------------------------------------------------------
 
 if CUDA is False:
-    print("\nCUDAHOME env variable or CUDA not found: skipping cuda extensions")
+    print("\nCUDAHOME or CUDA_PATH env variables not found: skipping cuda extensions")
     cmdclass = {'build_ext': build_ext}
 else:
     cmdclass = {'build_ext': custom_build_ext}
