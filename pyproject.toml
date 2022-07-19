@@ -3,7 +3,8 @@ name = "multipole_inversion"
 version = "0.9"
 description = "Library to generate scan grid measurements from multipole sources and perform numerical inversions"
 authors = ["D. Cortés-Ortuño <d.i.cortes@uu.nl>", "K. Fabian", "L. V. de Groot"]
-license = "BSD2"
+license = "MIT"
+readme = "README.md"
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
