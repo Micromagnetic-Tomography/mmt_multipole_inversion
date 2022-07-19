@@ -1,7 +1,5 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6473257.svg)](https://doi.org/10.5281/zenodo.6473257)
-![CC BY-NC-SA 4.0][cc-by-nc-sa-shield]
-
-[cc-by-nc-sa-shield]: https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 # MMT Numerical Libraries: Multipole Inversion
 
@@ -15,11 +13,11 @@ potential of the sources. The mathematical background of this method and its
 application to experimental data of a synthetic sample is developed in
 
 D. Cortés-Ortuño, K. Fabian, L. V. de Groot
-![Single Particle Multipole Expansions From Micromagnetic Tomography](https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/2021GC009663)
+[Single Particle Multipole Expansions From Micromagnetic Tomography](https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/2021GC009663)
 Geochemistry, Geophysics, Geosystems **22(4)**, e2021GC009663 (2021)
-DOI: ![https://doi.org/10.1029/2021GC009663](https://doi.org/10.1029/2021GC009663)
+DOI: [https://doi.org/10.1029/2021GC009663](https://doi.org/10.1029/2021GC009663)
 
-This library is developed as part of the ![Mimatom / MMT](https://mimatom.org/)
+This library is developed as part of the [Mimatom / MMT](https://mimatom.org/)
 project.
 
 # Library
@@ -70,7 +68,8 @@ If you find this library useful please cite us (you might need LaTeX's
     @Misc{Cortes2022,
       author       = {Cortés-Ortuño, David and Fabian, Karl and de Groot, Lennart V.},
       title        = {{MMT Numerical Libraries: Multipole Inversion}},
-      howpublished = {Zenodo \url{doi:10.5281/zenodo.6473257}. Github: \url{https://github.com/Micromagnetic-Tomography/multipole_inversion}},
+      publisher    = {Zenodo},
+      note         = {Github: \url{https://github.com/Micromagnetic-Tomography/multipole_inversion}},
       year         = {2022},
       doi          = {10.5281/zenodo.6473257},
       url          = {https://doi.org/10.5281/zenodo.6473257},
