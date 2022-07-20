@@ -30,11 +30,15 @@ author = 'David Cortés-Ortuño, Karl Fabian, Lennart V. de Groot'
 extensions = ['sphinx.ext.autodoc',      # autodocument functions
               'sphinx.ext.mathjax',      # for math strings
               'sphinx.ext.autosummary',
+              'autoapi.extension',
               'nbsphinx',                # render notebooks
               'numpydoc',                # to convert Numpy docstring into reST
               'sphinx_copybutton'        # copy code blocks
               ]
 
+
+autoapi_type = 'python'
+autoapi_dirs = ['../mmt_multipole_inversion']
 
 autodoc_typehints = "description"
 # napoleon_numpy_docstring = True

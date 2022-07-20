@@ -75,11 +75,10 @@ information:
 .. toctree::
    :maxdepth: 2
    
-   code/source_code
+   source/index.rst
 
 .. toctree::
    :maxdepth: 1
-   :hidden:
 
    tutorial/tutorial_basics.ipynb
 
