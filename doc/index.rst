@@ -69,18 +69,18 @@ Source code
 -----------
 
 Documentation of every function and class provides more details on the methods
-and options of the library. Please refer to the following secitons for more
-information:
-
-.. toctree::
-   :maxdepth: 2
-   
-   source/index.rst
+and options of the library. Please refer to the API section.
 
 .. toctree::
    :maxdepth: 1
+   :hidden:
 
    tutorial/tutorial_basics.ipynb
+
+.. toctree::
+   :hidden:
+
+   autoapi/index.rst
 
 
 Indices and tables
