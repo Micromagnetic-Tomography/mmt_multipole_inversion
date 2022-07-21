@@ -280,7 +280,7 @@ class MultipoleInversion(object):
         requires the generation of the `Q` matrix, hence the
         `generate_forward_matrix` method using `numba` is called if `Q` has not
         been set. To optimize the calculation of `Q`, call the function before
-        this method. 
+        this method.
 
         Parameters
         ----------
@@ -288,8 +288,7 @@ class MultipoleInversion(object):
             The numerical method to perform the inversion. Options:
                 np_pinv  -> Numpy's pinv
                 sp_pinv  -> Scipy's pinv (not recommended -> memory issues)
-                sp_pinv2 -> Scipy's pinv2 (deprecated with Scipy's >= 1.7
-                            so this will call sp_pinv instead)
+                sp_pinv2 -> Scipy's pinv2 (this will call sp_pinv instead)
         **method_kwargs
             Extra parameters passed to Numpy or Scipy functions. For Numpy, the
             tolerance can be set using `rcond` while for `Scipy` it is
