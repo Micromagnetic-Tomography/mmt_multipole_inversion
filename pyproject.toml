@@ -22,10 +22,10 @@ script = "build.py"
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
-numpy = "^1.20,<1.22"
+numpy = "^1.21,<1.23"
 scipy = "^1.7.0"
 matplotlib = "^3.2"
-numba = ">=0.55"
+numba = ">=0.55.2"
 Cython = "^0.29.30"
 
 [tool.poetry.dev-dependencies]
