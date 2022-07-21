@@ -1,4 +1,4 @@
-name: Manual build and publish
+name: TEST_manual build and publish
 
 on: workflow_dispatch
 
