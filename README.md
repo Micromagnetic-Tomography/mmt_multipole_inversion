@@ -1,6 +1,7 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.6473257.svg)](https://doi.org/10.5281/zenodo.6473257)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Documentation Status](https://readthedocs.org/projects/mmt-multipole-inversion/badge/?version=latest)](https://mmt-multipole-inversion.readthedocs.io/en/latest/?badge=latest)
+[![PyPI](https://img.shields.io/pypi/v/mmt-multipole-inversion.svg)](https://pypi.org/project/mmt-multipole-inversion/)
 
 # MMT Numerical Libraries: Multipole Inversion
 
@@ -45,8 +46,13 @@ are documented in the tutorial yet.
 
 # Installation
 
-Via PyPI or from this repository using `pip .` or `poetry install` or `poetry
+Via [PyPI](https://pypi.org/project/mmt-multipole-inversion/) 
+
+    pip install mmt-multipole-inversion
+
+or from this repository using `pip .` or `poetry install` or `poetry
 build` (which can be used with `pip`). Poetry is recommended for development.
+See the documentation for more details.
 
 ## CUDA
 
