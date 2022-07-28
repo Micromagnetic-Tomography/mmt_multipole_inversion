@@ -29,6 +29,7 @@ numba = ">=0.55"
 Cython = "^0.29.30"
 
 [tool.poetry.dev-dependencies]
+pytest = "^7.1.2"
 
 [build-system]
 requires = ["setuptools", "poetry-core>=1.1.14", "cython"]
