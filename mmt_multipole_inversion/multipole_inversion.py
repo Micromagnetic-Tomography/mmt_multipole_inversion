@@ -166,7 +166,7 @@ class MultipoleInversion(object):
 
         self.generate_measurement_mesh()
 
-        # Instatiate the forward matrix
+        # Instantiate the forward matrix
         self.Q = np.empty(0)
 
         # Sensor dimensions (optional)
@@ -178,7 +178,7 @@ class MultipoleInversion(object):
 
     @expansion_limit.setter
     def expansion_limit(self, string_value):
-        # This will determine the nuber of columns in the forward calculation
+        # This will determine the number of columns in the forward calculation
         if string_value == 'dipole':
             self._N_cols = 3
         elif string_value == 'quadrupole':
@@ -208,7 +208,7 @@ class MultipoleInversion(object):
             print(f'Scanning array size = {len(self.Sx_range)} x {len(self.Sy_range)}')
         self.N_sensors = self.Nx_surf * self.Ny_surf
 
-    def generate_forward_matrix(self, 
+    def generate_forward_matrix(self,
                                 optimization='numba',
                                 sensor_dim=1):
         """
@@ -274,7 +274,7 @@ class MultipoleInversion(object):
                                        self.Q, self._N_cols,
                                        *self.sensor_dims
                                        )
-            volm = 1 / (self.sensor_dims[0] * self.sensor_dims[1] * self.sensor_dims[2])
+            volm = 1 / (8 * self.sensor_dims[0] * self.sensor_dims[1] * self.sensor_dims[2])
             # Convert volume flux to average flux per sensor
             np.multiply(self.Q, volm, out=self.Q)
 

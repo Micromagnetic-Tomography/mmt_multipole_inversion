@@ -14,38 +14,31 @@ def dipole_Bz_sus(dip_r, pos_r, Q, n_col_stride,
     Sensor-Volume calculation of the dipole susceptibility contribution
     WARNING: Q should be zeroes
     """
+    f = 1e-7
     for i, ref_pos in enumerate(pos_r):
 
         dr = ref_pos - dip_r
-        x, y, z = dr[:, 0], dr[:, 1], dr[:, 2]
-        x2, y2, z2 = x ** 2, y ** 2, z ** 2
 
-        r2 = np.sum(dr ** 2, axis=1)
-        r = np.sqrt(r2)
-        f = 1e-7 / (r2 * r2 * r)
-
-        # Original ones: (WORKING)
-        p3 = f * (3 * z2 - r2)
-        p2 = f * (3 * y * z)
-        p1 = f * (3 * x * z)
-
-        for sx in [-1., 1.]:
+        for sz in [-1., 1.]:
             for sy in [-1., 1.]:
-                for sz in [-1., 1.]:
+                for sx in [-1., 1.]:
+                    sign = sx * sy * sz
 
                     x = dr[:, 0] + sx * dx_sensor
                     y = dr[:, 1] + sy * dy_sensor
-                    y = dr[:, 2] + sz * dz_sensor
-                    print('x', y[0])
+                    z = dr[:, 2] + sz * dz_sensor
 
                     x2, y2, z2 = x ** 2, y ** 2, z ** 2
                     r = np.sqrt(x2 + y2 + z2)
-                    print('r', r[0], (r / y)[0], np.arctanh(r / y)[0])
-                    f = 1e-7
 
-                    Q[i][::n_col_stride] += f * np.arctanh(y / r)
-                    Q[i][1::n_col_stride] += f * np.arctanh(x / r)
-                    Q[i][2::n_col_stride] += f * (-np.arctan2(x * y, r * z))
+                    Q[i][::n_col_stride] += sign * np.arctanh(y / r)
+                    Q[i][1::n_col_stride] += sign * np.arctanh(x / r)
+                    Q[i][2::n_col_stride] += sign * (-np.arctan2(x * y, r * z))
+
+        # Multiply by f here or for every loop? This seems more optimal:
+        Q[i][::n_col_stride] *= f
+        Q[i][1::n_col_stride] *= f
+        Q[i][2::n_col_stride] *= f
 
     return None
 
