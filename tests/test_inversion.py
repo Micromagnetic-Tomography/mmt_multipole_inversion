@@ -185,7 +185,7 @@ def test_inversion_single_dipole_numba_sensor_3D(limit):
             )
     inv_model.sensor_dims = (0.5e-6, 0.5e-6, 0.5e-6)
     inv_model.generate_measurement_mesh()
-    inv_model.generate_forward_matrix(optimization='numba', sensor_dim=3)
+    inv_model.generate_forward_matrix(optimization='numba')
     print(inv_model.Q)
     inv_model.compute_inversion()
 
@@ -218,5 +218,5 @@ if __name__ == '__main__':
     # test_inversion_single_dipole_cuda(limit='quadrupole')
     # test_inversion_single_dipole(limit='octupole')
 
-    test_inversion_single_dipole_numba(limit='dipole')
-    test_inversion_single_dipole_numba_sensor_3D('dipole')
+    test_inversion_single_dipole_numba(limit='quadrupole')
+    test_inversion_single_dipole_numba_sensor_3D('quadrupole')

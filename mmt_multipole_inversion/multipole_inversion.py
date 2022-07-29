@@ -48,18 +48,21 @@ def dipole_field(dip_r, dip_m, pos_r):
 
 SusOptions = Literal['spherical_harmonics_basis',
                      'maxwell_cartesian_polynomials',
-                     'cartesian_spherical_harmonics'
+                     'cartesian_spherical_harmonics',
+                     'spherical_harmonics_basis_volume'
                      ]
 ExpOptions = Literal['dipole', 'quadrupole', 'octupole']
 
 
 # TODO: verbose should be more useful for debugging
 class MultipoleInversion(object):
-    """
+    """Class to perform multipole inversions
+
     Class to perform multipole inversions of a magnetic scan surface into
     multiple magnetic sources located within a sample. Specifications of
     the scan grid and the magnetic particles in the sample can be generated
-    using the `MagneticSample` class.
+    using the `MagneticSample` class. The sensors of the magnetic scan surface
+    are modelled either as point sensors or sensor with cuboid shape (volume).
     """
 
     def __init__(self,
@@ -101,9 +104,15 @@ class MultipoleInversion(object):
             Spherical harmonic basis for the susceptibility matrix used for the
             multipole inversion. The fully orthogonal and linearly independent
             basis is the `spherical_harmonics_basis`. Other options are not
-            orthogonal but might be necessary for comparison. For details see
-            the comments in the libraries in the `sus_functions_module/`
-            directory and the Notes.
+            orthogonal but might be necessary for comparison. These modules
+            populate the forward matrix with the assumption that sensors are a
+            point, which can be seen as sensors with an area or volume where
+            the magnetic flux from the sources is treated as constant.
+            Alternatively, susceptibility modules ending with `_volume` have
+            the assumption that sensors have a cuboid volume where the magnetic
+            flux is integrated within it.
+            For details see the comments in the libraries in the
+            `sus_functions_module/` directory and the Notes.
 
         Notes
         -----
@@ -151,13 +160,13 @@ class MultipoleInversion(object):
 
         # TODO: there is a more efficient way to generate the variables from
         # the dictionary
-        self.Hz = metadict["Scan height Hz"]
-        self.Sx = metadict["Scan area x-dimension Sx"]
-        self.Sy = metadict["Scan area y-dimension Sy"]
-        self.Sdx = metadict["Scan x-step Sdx"]
-        self.Sdy = metadict["Scan y-step Sdy"]
-        self.N_particles = metadict["Number of particles"]
-        self.time_stamp = metadict["Time stamp"]
+        self.Hz = metadict.get("Scan height Hz")
+        self.Sx = metadict.get("Scan area x-dimension Sx")
+        self.Sy = metadict.get("Scan area y-dimension Sy")
+        self.Sdx = metadict.get("Scan x-step Sdx")
+        self.Sdy = metadict.get("Scan y-step Sdy")
+        self.N_particles = metadict.get("Number of particles")
+        self.time_stamp = metadict.get("Time stamp")
 
         # Set the variables scan_origin_x and scan_origin_y if found in the
         # dictionary, otherwise set them to 0.0
@@ -169,8 +178,8 @@ class MultipoleInversion(object):
         # Instantiate the forward matrix
         self.Q = np.empty(0)
 
-        # Sensor dimensions (optional)
-        self.sensor_dims = (0.0, 0.0, 0.0)
+        # Sensor dimensions (empty tuple if not specified)
+        self.sensor_dims = metadict.get("Sensor dimensions", ())
 
     @property
     def expansion_limit(self):
@@ -209,8 +218,7 @@ class MultipoleInversion(object):
         self.N_sensors = self.Nx_surf * self.Ny_surf
 
     def generate_forward_matrix(self,
-                                optimization='numba',
-                                sensor_dim=1):
+                                optimization='numba'):
         """
         Generate the forward matrix adding the field contribution from all
         the particles for every grid point at the scan surface. The field is
@@ -223,6 +231,12 @@ class MultipoleInversion(object):
         optimization
             The method to optimize the calculation of the matrix elements:
             `numba` or `cuda`
+
+        Notes
+        -----
+        In case of using one of the `_volume` susceptibility modules, where the
+        sensor is modelled in 3D, remember to specify the `self.sensor_dims`
+        tuple with the dimensions of the sensors
         """
         # Moment vec m = [mx[0], my[0], mz[0], ... , mx[N-1], my[N-1], mz[N-1]]
         # Position vector  p = [(x[0], y[0]),  ... , x[
@@ -241,9 +255,9 @@ class MultipoleInversion(object):
         X_pos, Y_pos = np.meshgrid(self.Sx_range, self.Sy_range)
         scan_positions[:, :2] = np.stack((X_pos, Y_pos), axis=2).reshape(-1, 2)
         scan_positions[:, 2] *= self.Hz
+        mp_order = {'dipole': 1, 'quadrupole': 2, 'octupole': 3}
 
-        if optimization == 'cuda' and sensor_dim == 1:
-            mp_order = {'dipole': 1, 'quadrupole': 2, 'octupole': 3}
+        if optimization == 'cuda' and len(self.sensor_dims) == 0:
             if HASCUDA is False:
                 raise Exception('The cuda method is not available. Stopping calculation')
 
@@ -258,7 +272,7 @@ class MultipoleInversion(object):
         # (N_particles x 3), compute the dipole (3 terms), quadrupole (5 terms)
         # or octupole (7 terms) contributions. Here we populate the Q array
         # using the numba-optimised susceptibility functions
-        elif optimization == 'numba' and sensor_dim == 1:
+        elif optimization == 'numba' and len(self.sensor_dims) == 0:
             self.sus_mod.dipole_Bz_sus(self.particle_positions, scan_positions,
                                        self.Q, self._N_cols)
             if self.expansion_limit in ['quadrupole', 'octupole']:
@@ -269,14 +283,18 @@ class MultipoleInversion(object):
                 self.sus_mod.octupole_Bz_sus(self.particle_positions,
                                              scan_positions,
                                              self.Q, self._N_cols)
-        elif optimization == 'numba' and sensor_dim == 3:
-            self.sus_mod.dipole_Bz_sus(self.particle_positions, scan_positions,
-                                       self.Q, self._N_cols,
-                                       *self.sensor_dims
-                                       )
+        elif optimization == 'numba' and len(self.sensor_dims) == 3:
+            self.sus_mod.multipole_Bz_sus(self.particle_positions, scan_positions,
+                                          self.Q, self._N_cols,
+                                          *self.sensor_dims,
+                                          mp_order[self.expansion_limit]
+                                          )
             volm = 1 / (8 * self.sensor_dims[0] * self.sensor_dims[1] * self.sensor_dims[2])
             # Convert volume flux to average flux per sensor
             np.multiply(self.Q, volm, out=self.Q)
+        else:
+            print('Invalid optimization choice and sensor_dims values')
+            return None
 
         t1 = time.time()
         if self.verbose:
