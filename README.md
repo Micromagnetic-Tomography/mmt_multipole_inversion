@@ -79,7 +79,7 @@ If you find this library useful please cite us (you might need LaTeX's
       author       = {Cortés-Ortuño, David and Fabian, Karl and de Groot, Lennart V.},
       title        = {{MMT Numerical Libraries: Multipole Inversion}},
       publisher    = {Zenodo},
-      note         = {Github: \url{https://github.com/Micromagnetic-Tomography/multipole_inversion}},
+      note         = {Github: \url{https://github.com/Micromagnetic-Tomography/mmt_multipole_inversion}},
       year         = {2022},
       doi          = {10.5281/zenodo.6473257},
       url          = {https://doi.org/10.5281/zenodo.6473257},
