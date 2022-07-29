@@ -10,13 +10,13 @@ Multipole Inversion documentation
 
 ----
 
-The **Multipole Inversion** Python library is a tool to perform numerical
-inversions of magnetic scan signal on a surface into one or multiple magnetic
-sources, which are modelled as physical point sources. Numerical inversions are
-based on a spherical harmonic expansion of the magnetic scalar potential of
-every source, from which dipole and higher order multipole moments can be
-obtained. For mathematical details of the multipole inversion technique please
-refer to:
+The MMT numerical library **Multipole Inversion** is a Python library to
+perform numerical inversions of magnetic scan signals on a surface into a
+single or multiple magnetic sources, which are modelled as physical point
+sources. Numerical inversions are based on a spherical harmonic expansion of
+the magnetic scalar potential of every source, from which dipole and higher
+order multipole moments can be obtained. For mathematical details of the
+multipole inversion technique please refer to:
 
 | D. Cortés-Ortuño, K. Fabian, L. V. de Groot
 | `Single Particle Multipole Expansions From Micromagnetic Tomography <https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/2021GC009663>`_.
@@ -26,39 +26,31 @@ refer to:
 If you find this library useful, please cite it referring to the paper as::
 
     @article{https://doi.org/10.1029/2021GC009663,
-    author = {Cortés-Ortuño, David and Fabian, Karl and de Groot, Lennart V.},
-    title = {Single Particle Multipole Expansions From Micromagnetic Tomography},
-    journal = {Geochemistry, Geophysics, Geosystems},
-    volume = {22},
-    number = {4},
-    pages = {e2021GC009663},
-    keywords = {magnetism, micromagnetic tomography, multipole, paleomagnetism, rock magnetism},
-    doi = {https://doi.org/10.1029/2021GC009663},
-    url = {https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/2021GC009663},
-    eprint = {https://agupubs.onlinelibrary.wiley.com/doi/pdf/10.1029/2021GC009663},
-    note = {e2021GC009663 2021GC009663},
-    year = {2021}
+      author = {Cortés-Ortuño, David and Fabian, Karl and de Groot, Lennart V.},
+      title = {Single Particle Multipole Expansions From Micromagnetic Tomography},
+      journal = {Geochemistry, Geophysics, Geosystems},
+      volume = {22},
+      number = {4},
+      pages = {e2021GC009663},
+      keywords = {magnetism, micromagnetic tomography, multipole, paleomagnetism, rock magnetism},
+      doi = {https://doi.org/10.1029/2021GC009663},
+      url = {https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/2021GC009663},
+      eprint = {https://agupubs.onlinelibrary.wiley.com/doi/pdf/10.1029/2021GC009663},
+      note = {e2021GC009663 2021GC009663},
+      year = {2021}
     }
 
-Installation
-------------
+You can also cite the library directly using::
 
-To install the library you can clone the Github `repository`_ and install via
-`pip`
-
-.. code-block:: sh
-
-    git clone https://github.com/Micromagnetic-Tomography/multipole_inversion.git
-    cd multipole_inversion
-    pip install .
-
-Or using the PyPI package (TO BE UPDATED):
-
-.. code-block:: sh
-
-    pip install multipole_inversion
-
-.. _repository: https://github.com/Micromagnetic-Tomography/multipole_inversion
+    @Misc{Cortes2022,
+      author       = {Cortés-Ortuño, David and Fabian, Karl and de Groot, Lennart V.},
+      title        = {{MMT Numerical Libraries: Multipole Inversion}},
+      publisher    = {Zenodo},
+      note         = {Github: \url{https://github.com/Micromagnetic-Tomography/multipole_inversion}},
+      year         = {2022},
+      doi          = {10.5281/zenodo.6473257},
+      url          = {https://doi.org/10.5281/zenodo.6473257},
+    }
 
 Usage
 -----
@@ -69,23 +61,24 @@ Source code
 -----------
 
 Documentation of every function and class provides more details on the methods
-and options of the library. Please refer to the API section.
+and options of the library, these are specified in the API section. You can
+also check the project's `Github`_ repository.
+
+.. _Github: https://github.com/Micromagnetic-Tomography/mmt_multipole_inversion
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :hidden:
 
+   Introduction <self>
+   installation.rst
    tutorial/tutorial_basics.ipynb
-
-.. toctree::
-   :hidden:
-
    autoapi/index.rst
 
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+.. Indices and tables
+.. ==================
+.. 
+.. * :ref:`genindex`
+.. * :ref:`modindex`
+.. * :ref:`search`

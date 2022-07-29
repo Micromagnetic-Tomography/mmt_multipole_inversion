@@ -8,7 +8,7 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.14.0
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: Python 3 (ipykernel)
 #     language: python
 #     name: python3
 # ---
@@ -240,13 +240,13 @@ ax.set_aspect('equal')
 qinv.inv_multipole_moments
 
 # %% [markdown]
-# # Quadrupole
+# ## Quadrupole
 
 # %% [markdown]
 # Here we define a quadrupole by specifying two magnetic dipoles oriented in opposite directions and located close to the center of the sample. Before saving the data, we redefine the two dipoles as a single particle at the center of the sample. The purpose of this idea is to analyse the strength of a magnetic quadrupole when solving the inversion problem. Accordingly, the dipole moments should be  close to zero and one or more quadrupole moments should be stronger.
 
 # %% [markdown]
-# ## Quadrupole y-direction
+# ### Quadrupole y-direction
 #
 # The first example is a quadrupole oriented in the $+\hat{y}$ and $-\hat{y}$ directions, located at 4.5 micrometers from the measurement surface of the sample.
 
@@ -357,7 +357,7 @@ colorbar(cf)
 ax.set_aspect('equal')
 
 # %% [markdown]
-# # Quadrupole x-direction
+# ### Quadrupole x-direction
 
 # %% [markdown]
 # We repeat the same calculations here, but setting the two dipoles in the $x$-direction
@@ -417,7 +417,7 @@ qinv.compute_inversion(method='sp_pinv2')
 qinv.inv_multipole_moments
 
 # %% [markdown]
-# ## Quadrupole xy-direction
+# ### Quadrupole xy-direction
 
 # %% [markdown]
 # And the calculation for the dipoles in the $xy$ direction ($\phi = \pi/4$ in polar)
@@ -483,7 +483,7 @@ colorbar(cf)
 ax.set_aspect('equal')
 
 # %% [markdown]
-# # Octupole
+# ## Octupole
 
 # %%
 Hz = 2e-6  # Scan height in m
@@ -569,7 +569,7 @@ colorbar(cf)
 qinv.inv_multipole_moments
 
 # %% [markdown]
-# # Multiple particles sample
+# ## Multiple particles sample
 
 # %%
 Hz = 5e-6  # Scan height in m
@@ -608,7 +608,7 @@ plt.plot(sample.dipole_moments[:, 2], 's', label=r'$m_z$')
 plt.legend()
 
 # %% [markdown]
-# ## Inversion
+# ### Inversion
 
 # %%
 qinv = minv.MultipoleInversion('./MetaDict_seed42.json',

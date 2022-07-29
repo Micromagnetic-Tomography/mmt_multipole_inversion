@@ -1,4 +1,4 @@
-name: Manual build and publish
+name: TEST_manual build and publish
 
 on: workflow_dispatch
 
@@ -69,8 +69,9 @@ jobs:
         mv poetry-dist-objects-windows-latest/*.whl dist/
         mv poetry-dist-objects-ubuntu-latest/* dist/
 
-    - name: Publish package to PyPI
+    - name: Publish package to TestPyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         user: __token__
-        password: ${{ secrets.PYPI_API_TOKEN }}
+        password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+        repository_url: https://test.pypi.org/legacy/

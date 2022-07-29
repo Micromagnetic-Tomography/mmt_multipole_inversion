@@ -1,0 +1,13 @@
+/* Theme specifications */
+
+h1 {
+    white-space: pre-line;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+}
+
+/* To make classes more visible */
+.property {
+  font-size: var(--pst-font-size-h4);
+}
