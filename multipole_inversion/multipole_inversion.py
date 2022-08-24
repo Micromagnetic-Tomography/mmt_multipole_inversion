@@ -131,7 +131,7 @@ class MultipoleInversion(object):
 
     @expansion_limit.setter
     def expansion_limit(self, string_value):
-        # This will determine the nuber of columns in the forward calculation
+        # This will determine the number of columns in the forward calculation
         if string_value == 'dipole':
             self._N_cols = 3
         elif string_value == 'quadrupole':
