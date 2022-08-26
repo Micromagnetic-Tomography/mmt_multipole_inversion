@@ -173,12 +173,12 @@ def test_inversion_single_dipole_cuda(limit):
 if __name__ == '__main__':
     # fw_model_fun()
 
-    test_inversion_single_dipole(limit='dipole')
-    test_inversion_single_dipole(limit='quadrupole')
-    test_inversion_single_dipole(limit='octupole')
+    test_inversion_single_dipole_numba(limit='dipole')
+    test_inversion_single_dipole_numba(limit='quadrupole')
+    test_inversion_single_dipole_numba(limit='octupole')
 
     test_compare_cuda_numba_populate_array(limit='octupole')
 
     test_inversion_single_dipole_cuda(limit='dipole')
     test_inversion_single_dipole_cuda(limit='quadrupole')
-    test_inversion_single_dipole(limit='octupole')
+    test_inversion_single_dipole_cuda(limit='octupole')
