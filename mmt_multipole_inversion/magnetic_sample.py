@@ -1,4 +1,3 @@
-<<<<<<< HEAD:multipole_inversion/magnetic_sample.py
 import numpy as np
 # import math
 import matplotlib.pyplot as plt
@@ -871,4 +870,3 @@ class MagneticSample(object):
                         self.dipole_positions[:, 1] * dms,
                         **scatter_args)
         return cf, c1, c2
->>>>>>> 771ed8a4c11a04540a68e55a724b77d9d39154d0:mmt_multipole_inversion/magnetic_sample.py
