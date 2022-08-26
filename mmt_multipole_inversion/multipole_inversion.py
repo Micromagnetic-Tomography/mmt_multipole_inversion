@@ -272,6 +272,7 @@ class MultipoleInversion(object):
 
     def compute_inversion(self,
                           method='sp_pinv',
+                          sigma=None,
                           **method_kwargs
                           ):
         """
@@ -289,6 +290,10 @@ class MultipoleInversion(object):
                 np_pinv  -> Numpy's pinv
                 sp_pinv  -> Scipy's pinv (not recommended -> memory issues)
                 sp_pinv2 -> Scipy's pinv2 (this will call sp_pinv instead)
+        sigma
+            The standard deviation of uncorrelated noise in the magnetic
+            flux field. Unit is given in Tm^2. Covariance matrix is produced
+            if a float value is inputted.
         **method_kwargs
             Extra parameters passed to Numpy or Scipy functions. For Numpy, the
             tolerance can be set using `rcond` while for `Scipy` it is
@@ -328,18 +333,60 @@ class MultipoleInversion(object):
                                       self.inv_multipole_moments.reshape(-1))
         self.inv_Bz_array.shape = (self.Ny_surf, -1)
 
-    def save_multipole_moments(self, save_name='TIME_STAMP', basedir='.'):
+        # Generate covariance matrix if sigma not none
+        if sigma is not None:
+            self.covariance = sigma**2 * np.matmul(self.IQ, self.IQ.transpose())
+
+    def save_multipole_moments(self, save_name='TIME_STAMP', basedir='.', std=False):
         """
         Save the multipole values in `npz` files. Values are computed from the
         inversion using the `compute_inversion` method.
+
+        Parameters
+        ----------
+        std
+            If True, standard deviation is saved with multipole. Only possible 
+            if sigma is inputted in the self.compute_inversion method.
         """
         BASEDIR = Path(basedir)
         if save_name == 'TIME_STAMP':
             fname = BASEDIR / f'InvMagQuad_{self.time_stamp}.npz'
         else:
             fname = BASEDIR / f'InvMagQuad_{save_name}.npz'
-        np.savez(fname, inv_multipole_moments=self.inv_multipole_moments)
 
+        if std:
+            self.std = np.sqrt(np.diag(self.covariance)).reshape(self.N_particles, -1)
+            np.savez(
+                fname,
+                inv_multipole_moments=self.inv_multipole_moments,
+                standard_deviation=self.std)
+        else:
+            np.savez(fname, inv_multipole_moments=self.inv_multipole_moments)
+
+    def save_covariance(self, save_name='TIME_STAMP', basedir='.', norm=True):
+        """
+        Save the covariance matrix computed during the inversion obtained
+        with the sigma option in the self.compute_inversion method. 
+
+        Parameters
+        ----------
+        norm
+            If norm is False covariance matrix is saved. 
+            If norm is True the normalized covariance is saved instead.
+        """
+        BASEDIR = Path(basedir)
+        if save_name == 'TIME_STAMP':
+            fname = BASEDIR / f'CovarMat_{self.time_stamp}.npz'
+        else:
+            fname = BASEDIR / f'CovarMat_{save_name}.npz'
+
+        if norm:
+            covar = np.divide(self.covariance, np.sqrt(np.diag(self.covariance)))
+            covar = np.divide(covar, np.sqrt(np.diag(self.covariance))[:, None])
+        else:
+            covar = self.covariance
+
+        np.savez(fname, covariance=covar)
 
 # PLOTS -----------------------------------------------------------------------
 # These functions have been moved to the plot_tools module but will be left
