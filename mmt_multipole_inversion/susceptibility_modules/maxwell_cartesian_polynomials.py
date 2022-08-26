@@ -14,14 +14,17 @@ def dipole_Bz_sus(dip_r, pos_r, Q, n_col_stride):
 
         (len(pos_r), len(dip_r) * n_col_stride)
 
-    Inputs ::
+    Parameters
+    ----------
+    dip_r
+        N x 3 array OR 1 x 3 array
+    pos_r
+        M x 3 array OR 1 x 3 array
 
-        dip_r   :: N x 3 array OR 1 x 3 array
-        pos_r   :: M x 3 array OR 1 x 3 array
-
-    Returns ::
-
+    Returns
+    -------
     None
+        None
 
     Calculate magnetic flux Bz-susceptibility per dipole component generated
     by dipoles located in position dip_r (m) at position  pos_r (m)
@@ -69,12 +72,18 @@ def dipole_Bz_sus(dip_r, pos_r, Q, n_col_stride):
 @numba.jit(nopython=True)
 def quadrupole_Bz_sus(dip_r, pos_r, Q, n_col_stride):  # see Overleaf
     """
-    dip_r   :: N x 3 array OR 1 x 3 array
-    pos_r   :: N x 3 array OR 1 x 3 array
+    Parameters
+    ----------
+    dip_r
+        N x 3 array OR 1 x 3 array
+    pos_r
+        M x 3 array OR 1 x 3 array
 
     Returns
+    -------
+    None
+        None
 
-        N x 5  array with 5 quadrupole moments from the traceless 2-tensor
     """
 
     for i, ref_pos in enumerate(pos_r):
@@ -107,12 +116,18 @@ def quadrupole_Bz_sus(dip_r, pos_r, Q, n_col_stride):  # see Overleaf
 @numba.jit(nopython=True)
 def octupole_Bz_sus(dip_r, pos_r, Q, n_col_stride):
     """
-    dip_r   :: N x 3 array OR 1 x 3 array
-    pos_r   :: N x 3 array OR 1 x 3 array
+    Parameters
+    ----------
+    dip_r
+        N x 3 array OR 1 x 3 array
+    pos_r
+        M x 3 array OR 1 x 3 array
 
     Returns
+    -------
+    None
+        None
 
-        N x 7  array with 7 octupole moments from the traceless 3-tensor
     """
 
     octp = np.zeros((dip_r.shape[0], 7))

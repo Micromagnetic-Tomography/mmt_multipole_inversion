@@ -1,0 +1,35 @@
+[tool.poetry]
+name = "mmt_multipole_inversion"
+version = "1.0"
+description = "Library to generate scan grid measurements from multipole sources and perform numerical inversions"
+authors = ["D. Cortés-Ortuño <d.i.cortes@uu.nl>", "K. Fabian", "L. V. de Groot"]
+license = "MIT"
+readme = "README.md"
+
+packages = [
+    {include = "mmt_multipole_inversion"}
+]
+
+include = [
+    # CUDA/C extensions must be included in the wheel distributions
+    {path = "mmt_multipole_inversion/susceptibility_modules/cuda/*.so", format = "wheel"},
+    {path = "mmt_multipole_inversion/susceptibility_modules/cuda/*.pyd", format = "wheel"},
+]
+
+[tool.poetry.build]
+generate-setup-file = false
+script = "build.py"
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.11"
+numpy = "^1.21,<1.23"
+scipy = "^1.7.0"
+matplotlib = "^3.2"
+numba = ">=0.55.2"
+Cython = "^0.29.30"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["setuptools", "poetry-core>=1.1.14", "cython"]
+build-backend = "poetry.core.masonry.api"

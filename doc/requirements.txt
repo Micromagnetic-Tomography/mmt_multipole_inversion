@@ -1,0 +1,10 @@
+# Defining the exact version will make sure things don't break
+sphinx==4.2.0
+nbsphinx==0.8.9
+pandoc==2.2
+# pydata-sphinx-theme==0.9.0
+furo==2022.6.21
+sphinx-autoapi==1.8.4
+sphinx-copybutton==0.5.0
+numpydoc==1.4.0
+ipython==8.4.0

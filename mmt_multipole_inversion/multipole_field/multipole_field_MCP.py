@@ -7,17 +7,17 @@ import numpy as np
 def Br_field_octupole(r, theta, phi, W1, W2, W3, W4, W5, W6, W7):
     r"""
     Compute the octupole field at a given position (r, theta, phi) in
-    spherical coordinates, and using 7 octupole moments:
+    spherical coordinates, and using 7 octupole moments::
 
-    W1 -> W_xxx
-    W2 -> W_xxy
-    W3 -> W_xxz
-    W4 -> W_xyz
-    W5 -> W_yyx
-    W6 -> W_yyy
-    W7 -> W_yyz
+        W1 -> W_xxx
+        W2 -> W_xxy
+        W3 -> W_xxz
+        W4 -> W_xyz
+        W5 -> W_yyx
+        W6 -> W_yyy
+        W7 -> W_yyz
 
-    We are assuming Ms lies in these octupole moments, so Bx is
+    We are assuming Ms lies in these octupole moments, so Bx is::
 
         Bx =  mu0    _5_
               ----   \    W_i * Px_i
@@ -27,9 +27,8 @@ def Br_field_octupole(r, theta, phi, W1, W2, W3, W4, W5, W6, W7):
     where Px_i is the polynomial associated to the oct moment W_i, for the
     x-component of the B field. Similarly for the other components.
 
-
-    TODO: Speed up the calculations vectorizing the operations!
     """
+    # TODO: Speed up the calculations vectorizing the operations!
 
     x = r * np.sin(theta) * np.cos(phi)
     y = r * np.sin(theta) * np.sin(phi)
@@ -76,15 +75,15 @@ def Br_field_octupole(r, theta, phi, W1, W2, W3, W4, W5, W6, W7):
 def Br_field_quadrupole_Cartesian(x, y, z, Q1, Q2, Q3, Q4, Q5):
     r"""
     Compute the quadrupole field at a given position (r, theta, phi) in
-    spherical coordinates, and using 5 quadrupole moments:
+    spherical coordinates, and using 5 quadrupole moments::
 
-    Q1 -> Theta_xx
-    Q2 -> Theta_xy
-    Q3 -> Theta_xz
-    Q4 -> Theta_yy
-    Q5 -> Theta_yz
+        Q1 -> Theta_xx
+        Q2 -> Theta_xy
+        Q3 -> Theta_xz
+        Q4 -> Theta_yy
+        Q5 -> Theta_yz
 
-    We are assuming Ms lies in these quadrupole moments, so Bx is
+    We are assuming Ms lies in these quadrupole moments, so Bx is::
 
         Bx =  mu0    _5_
               ----   \    Q_i * Px_i
@@ -94,9 +93,8 @@ def Br_field_quadrupole_Cartesian(x, y, z, Q1, Q2, Q3, Q4, Q5):
     where Px_i is the polynomial associated to the quad moment Q_i, for the
     x-component of the B field. Similarly for the other components.
 
-
-    TODO: Speed up the calculations vectorizing the operations!
     """
+    # TODO: Speed up the calculations vectorizing the operations!
 
     # Not necessary: dip_r, pos_r
     # Args: r, theta, phi
@@ -141,15 +139,15 @@ def Br_field_quadrupole_Cartesian(x, y, z, Q1, Q2, Q3, Q4, Q5):
 def Br_field_quadrupole(r, theta, phi, Q1, Q2, Q3, Q4, Q5):
     r"""
     Compute the quadrupole field at a given position (r, theta, phi) in
-    spherical coordinates, and using 5 quadrupole moments:
+    spherical coordinates, and using 5 quadrupole moments::
 
-    Q1 -> Theta_xx
-    Q2 -> Theta_xy
-    Q3 -> Theta_xz
-    Q4 -> Theta_yy
-    Q5 -> Theta_yz
+        Q1 -> Theta_xx
+        Q2 -> Theta_xy
+        Q3 -> Theta_xz
+        Q4 -> Theta_yy
+        Q5 -> Theta_yz
 
-    We are assuming Ms lies in these quadrupole moments, so Bx is
+    We are assuming Ms lies in these quadrupole moments, so Bx is::
 
         Bx =  mu0    _5_
               ----   \    Q_i * Px_i
@@ -159,10 +157,9 @@ def Br_field_quadrupole(r, theta, phi, Q1, Q2, Q3, Q4, Q5):
     where Px_i is the polynomial associated to the quad moment Q_i, for the
     x-component of the B field. Similarly for the other components.
 
-
-    TODO: Speed up the calculations vectorizing the operations!
-    TODO: Use the Cartesian function
     """
+    # TODO: Speed up the calculations vectorizing the operations!
+    # TODO: Use the Cartesian function
 
     # Not necessary: dip_r, pos_r
     # Args: r, theta, phi
@@ -211,9 +208,9 @@ def Br_field_quadrupole(r, theta, phi, Q1, Q2, Q3, Q4, Q5):
 def Br_field_dipole(r, theta, phi, m1, m2, m3):
     r"""
     Compute the dipole field at a given position (r, theta, phi) in
-    spherical coordinates, and using 3 dipolar moments
+    spherical coordinates, and using 3 dipolar moments.
 
-    We are assuming Ms lies in these dipole moments, so Bx is
+    We are assuming Ms lies in these dipole moments, so Bx is::
 
         Bx =  mu0    _3_
               ----   \    m_i * Px_i
@@ -223,9 +220,8 @@ def Br_field_dipole(r, theta, phi, m1, m2, m3):
     where Px_i is the polynomial associated to the dipole moment m_i, for the
     x-component of the B field. Similarly for the other components.
 
-
-    TODO: Speed up the calculations vectorizing the operations!
     """
+    # TODO: Speed up the calculations vectorizing the operations!
 
     x = r * np.sin(theta) * np.cos(phi)
     y = r * np.sin(theta) * np.sin(phi)

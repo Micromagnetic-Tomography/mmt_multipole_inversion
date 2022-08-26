@@ -1,5 +1,5 @@
 import numpy as np
-import multipole_inversion.magnetic_sample as msp
+import mmt_multipole_inversion.magnetic_sample as msp
 
 
 def test_fw_model_and_bz_field():
