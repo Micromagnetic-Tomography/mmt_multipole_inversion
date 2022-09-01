@@ -64,11 +64,10 @@ def test_inversion_single_dipole_numba(limit):
     fw_model_fun()
 
     inv_model = minv.MultipoleInversion(
-            TEST_SAVEDIR / 'MetaDict_fw_model_test_inversion.json',
-            TEST_SAVEDIR / 'MagneticSample_fw_model_test_inversion.npz',
-            expansion_limit=limit,
-            sus_functions_module='spherical_harmonics_basis'
-            )
+        TEST_SAVEDIR / 'MetaDict_fw_model_test_inversion.json',
+        TEST_SAVEDIR / 'MagneticSample_fw_model_test_inversion.npz',
+        expansion_limit=limit,
+        sus_functions_module='spherical_harmonics_basis')
     inv_model.generate_measurement_mesh()
     inv_model.compute_inversion()
 
@@ -80,8 +79,7 @@ def test_inversion_single_dipole_numba(limit):
     # Compare the inverted dipole moments from the theoretical value by
     # analyzing the relative error
     for i in range(3):
-        rel_diff = abs(inv_model.inv_multipole_moments[0][i] -
-                       expected_magnetization[i])
+        rel_diff = abs(inv_model.inv_multipole_moments[0][i] - expected_magnetization[i])
         if expected_magnetization[i] > 0:
             rel_diff /= abs(expected_magnetization[i])
         # print(rel_diff)
@@ -95,22 +93,20 @@ def test_compare_cuda_numba_populate_array(limit):
     """
 
     inv_model = minv.MultipoleInversion(
-            TEST_SAVEDIR / 'MetaDict_fw_model_test_inversion.json',
-            TEST_SAVEDIR / 'MagneticSample_fw_model_test_inversion.npz',
-            expansion_limit=limit,
-            sus_functions_module='spherical_harmonics_basis'
-            )
+        TEST_SAVEDIR / 'MetaDict_fw_model_test_inversion.json',
+        TEST_SAVEDIR / 'MagneticSample_fw_model_test_inversion.npz',
+        expansion_limit=limit,
+        sus_functions_module='spherical_harmonics_basis')
     inv_model.generate_measurement_mesh()
     inv_model.generate_forward_matrix(optimization='cuda')
     # inv_model.compute_inversion()
     Q_cuda = np.copy(inv_model.Q)
 
     inv_model = minv.MultipoleInversion(
-            TEST_SAVEDIR / 'MetaDict_fw_model_test_inversion.json',
-            TEST_SAVEDIR / 'MagneticSample_fw_model_test_inversion.npz',
-            expansion_limit=limit,
-            sus_functions_module='spherical_harmonics_basis'
-            )
+        TEST_SAVEDIR / 'MetaDict_fw_model_test_inversion.json',
+        TEST_SAVEDIR / 'MagneticSample_fw_model_test_inversion.npz',
+        expansion_limit=limit,
+        sus_functions_module='spherical_harmonics_basis')
     inv_model.generate_measurement_mesh()
     inv_model.generate_forward_matrix(optimization='numba')
     Q_numba = np.copy(inv_model.Q)
@@ -144,11 +140,10 @@ def test_inversion_single_dipole_cuda(limit):
     fw_model_fun()
 
     inv_model = minv.MultipoleInversion(
-            TEST_SAVEDIR / 'MetaDict_fw_model_test_inversion.json',
-            TEST_SAVEDIR / 'MagneticSample_fw_model_test_inversion.npz',
-            expansion_limit=limit,
-            sus_functions_module='spherical_harmonics_basis'
-            )
+        TEST_SAVEDIR / 'MetaDict_fw_model_test_inversion.json',
+        TEST_SAVEDIR / 'MagneticSample_fw_model_test_inversion.npz',
+        expansion_limit=limit,
+        sus_functions_module='spherical_harmonics_basis')
     inv_model.generate_measurement_mesh()
     inv_model.generate_forward_matrix(optimization='cuda')
     inv_model.compute_inversion()
@@ -161,8 +156,7 @@ def test_inversion_single_dipole_cuda(limit):
     # Compare the inverted dipole moments from the theoretical value by
     # analyzing the relative error
     for i in range(3):
-        rel_diff = abs(inv_model.inv_multipole_moments[0][i] -
-                       expected_magnetization[i])
+        rel_diff = abs(inv_model.inv_multipole_moments[0][i] - expected_magnetization[i])
         if expected_magnetization[i] > 0:
             rel_diff /= abs(expected_magnetization[i])
         # print(rel_diff)
@@ -173,12 +167,12 @@ def test_inversion_single_dipole_cuda(limit):
 if __name__ == '__main__':
     # fw_model_fun()
 
-    test_inversion_single_dipole(limit='dipole')
-    test_inversion_single_dipole(limit='quadrupole')
-    test_inversion_single_dipole(limit='octupole')
+    test_inversion_single_dipole_numba(limit='dipole')
+    test_inversion_single_dipole_numba(limit='quadrupole')
+    test_inversion_single_dipole_numba(limit='octupole')
 
     test_compare_cuda_numba_populate_array(limit='octupole')
 
     test_inversion_single_dipole_cuda(limit='dipole')
     test_inversion_single_dipole_cuda(limit='quadrupole')
-    test_inversion_single_dipole(limit='octupole')
+    test_inversion_single_dipole_cuda(limit='octupole')

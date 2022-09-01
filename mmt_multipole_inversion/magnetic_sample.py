@@ -21,7 +21,7 @@ def dipole_field(dip_r, dip_m, pos_r):
 
     Parameters
     ----------
-    dip_r 
+    dip_r
         N x 3 array with dipole dipole_positions (m)
     dip_m
         N x 3 array with dipole moments (Am^2)
@@ -48,10 +48,12 @@ def dipole_field(dip_r, dip_m, pos_r):
 
 
 def ran_sphere(n, ran_generator):
-    """
-    Random number generator
+    """Random number generator
 
-    ran_generator   :: set a np.RandomState
+    Parameters
+    ----------
+    ran_generator
+        A Numpy `RandomState` object to generate random numbers
     """
     theta = ran_generator.uniform(0.0, 2 * np.pi, n)
     z = ran_generator.uniform(-1.0, 1.0, n)
@@ -77,7 +79,7 @@ class MagneticSample(object):
     them to generate the total flux at every area of the scan grid mesh.
 
     ::
- 
+
                              Sdx
                           ___/___
                          /      /            Scan Grid
@@ -109,7 +111,7 @@ class MagneticSample(object):
 
         Parameters
         ----------
-        Hz 
+        Hz
             Scan height in m
         Sx, Sy
             Scan area x and y - dimension in m
@@ -199,7 +201,7 @@ class MagneticSample(object):
             Number of particles
         Ms
             Saturation magnetisation
-        seed 
+        seed
             random number generator seed
         rmin, rmax
             minimum and maximum scale factors for the limits of the locations
@@ -259,13 +261,13 @@ class MagneticSample(object):
 
         Parameters
         ----------
-        positions           
+        positions
             N x 3 array (m units)
-        dipole_moments      
+        dipole_moments
             N x 3 array (A m^2 unitS)
-        volumes             
+        volumes
             N x 3 array (m^3 units)
-        quadrupole_moments  
+        quadrupole_moments
             N x 5 array with quadrupole moments
         octupole_moments
             N x 7 array with octupole moments
@@ -343,9 +345,9 @@ class MagneticSample(object):
 
         Parameters
         ----------
-        filename        
+        filename
             Name appended to the dictionary and arrays base name
-        basedir         
+        basedir
             An optional directory to which data is going to be stored
         noised_array
             Save the noised Bz_array instead of the original array
