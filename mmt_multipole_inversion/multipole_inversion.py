@@ -243,7 +243,7 @@ class MultipoleInversion(object):
                 raise Exception('The cuda method is not available. Stopping calculation')
 
             sus_cudalib.SHB_populate_matrix(self.particle_positions,
-                                            scan_positions, 
+                                            scan_positions,
                                             self.Q,
                                             self.N_particles, self.N_sensors,
                                             mp_order[self.expansion_limit],
@@ -270,8 +270,11 @@ class MultipoleInversion(object):
             print(f'Generation of Q matrix took: {t1 - t0:.4f} s')
         # print('Q shape:', Q.shape)
 
+    _InvMethodOps = Literal['np_pinv', 'sp_pinv', 'sp_pinv2']
+
     def compute_inversion(self,
-                          method='sp_pinv',
+                          method: _InvMethodOps = 'sp_pinv',
+                          sigma_field_noise: Optional[float] = None,
                           **method_kwargs
                           ):
         """
@@ -289,6 +292,15 @@ class MultipoleInversion(object):
                 np_pinv  -> Numpy's pinv
                 sp_pinv  -> Scipy's pinv (not recommended -> memory issues)
                 sp_pinv2 -> Scipy's pinv2 (this will call sp_pinv instead)
+        sigma_field_noise
+            If a `float` is specified, a covariance matrix is produced and
+            stored in the `covariance_matrix` variable. This matrix uses
+            the value of `sigma` as the standard deviation of uncorrelated
+            noise in the magnetic flux field. Units are T m^2. In addition, the
+            standard deviation of the magnetic moments are calculated and
+            stored in the `inv_moments_std` 2D array where every row has the
+            results per grain. For details, see
+            [F. Out et al. Geochemistry, Geophysics, Geosystems 23(4). 2022]
         **method_kwargs
             Extra parameters passed to Numpy or Scipy functions. For Numpy, the
             tolerance can be set using `rcond` while for `Scipy` it is
@@ -328,17 +340,46 @@ class MultipoleInversion(object):
                                       self.inv_multipole_moments.reshape(-1))
         self.inv_Bz_array.shape = (self.Ny_surf, -1)
 
-    def save_multipole_moments(self, save_name='TIME_STAMP', basedir='.'):
-        """
-        Save the multipole values in `npz` files. Values are computed from the
-        inversion using the `compute_inversion` method.
+        # Generate covariance matrix if sigma not none
+        if isinstance(sigma_field_noise, float):
+            self.covariance_matrix = (sigma_field_noise ** 2) * np.matmul(self.IQ, self.IQ.transpose())
+            # Compute the std deviation in the mag moments solutions
+            self.inv_moments_std = np.sqrt(np.diag(self.covariance_matrix))
+            # Reshape into (N_particles, N_multipoles) matrix
+            self.inv_moments_std.shape = (self.N_particles, -1)
+
+    def save_multipole_moments(self,
+                               save_name: str = 'TIME_STAMP',
+                               basedir: Union[Path, str] = '.',
+                               save_moments_std: bool = False) -> None:
+        """Save the multipole values in `npz` files.
+
+        Values need to be computed using the `compute_inversion` method.
+
+        Parameters
+        ----------
+        save_name
+            File name of the `npz` file
+        basedir
+            Base directory where results are saved. Will be created if it
+            does not exist
+        save_moments_std
+            Add the standard deviation of the magnetic moments to the `npz`
+            file in case the `sigma_field_noise` was specified in the inversion
         """
         BASEDIR = Path(basedir)
+        BASEDIR.mkdir(exist_ok=True)
+
         if save_name == 'TIME_STAMP':
             fname = BASEDIR / f'InvMagQuad_{self.time_stamp}.npz'
         else:
             fname = BASEDIR / f'InvMagQuad_{save_name}.npz'
-        np.savez(fname, inv_multipole_moments=self.inv_multipole_moments)
+
+        data_dict = dict(inv_multipole_moments=self.inv_multipole_moments)
+        if save_moments_std:
+            data_dict['moments_std'] = self.inv_moments_std
+
+        np.savez(fname, **data_dict)
 
 
 # PLOTS -----------------------------------------------------------------------
