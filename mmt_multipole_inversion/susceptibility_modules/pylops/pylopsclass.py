@@ -155,13 +155,25 @@ class GreensMatrix(LinearOperator):
         self.N_particles = N_particles
         self.shape = (self.N_sensors, self.N_particles * self._N_cols)
         self.particle_positions = particle_positions
-        self.expansion_limit = expansion_limit
+        if expansion_limit in ['dipole', 'quadrupole', 'octupole']:
+            self.expansion_limit = expansion_limit
+        else:
+            raise Exception('Specify a correct expansion limit')
         self.scan_positions = scan_positions
         self.verbose = verbose
 
         self.optimization = optimization
         self.explicit = False
         self.dtype = dtype
+
+        self.matvecList = [dipole_Bz_sus]
+        self.rmatvecList = [dipole_Bz_sus_t]
+        if self.expansion_limit in ['quadrupole', 'octupole']:
+            self.matvecList.append(quadrupole_Bz_sus)
+            self.rmatvecList = [quadrupole_Bz_sus_t]
+        if self.expansion_limit in ['octupole']:
+            self.matvecList.append(octupole_Bz_sus)
+            self.rmatvecList = [octupole_Bz_sus_t]
 
     def _matvec(self, xin):
         # x is input magnetic moment, output y data vector
@@ -185,73 +197,22 @@ class GreensMatrix(LinearOperator):
         # required functions have been copied to this script
         # might combine functions into one
         if self.optimization == 'numba':
-            # reshape the magnetic moment vector to accomodate
-            # fast calculations using numba
+            # reshape the magnetic moment vector to order: [mx1 mx2 ... my1 my2 ... ]
+            # so Numba can use the dot product more efficiently
             xin = xin.reshape(self.N_particles, self._N_cols).flatten('F')
-            if self.expansion_limit in ['dipole']:
-                dipole_Bz_sus(
-                    xin, self.N_sensors, self.N_particles,
-                    self.particle_positions, self.scan_positions, yout,
-                    self._N_cols
-                    )
-            elif self.expansion_limit in ['quadrupole']:
-                dipole_Bz_sus(
-                    xin, self.N_sensors, self.N_particles,
-                    self.particle_positions, self.scan_positions, yout,
-                    self._N_cols
-                    )
-                quadrupole_Bz_sus(
-                    xin, self.N_sensors, self.N_particles,
-                    self.particle_positions, self.scan_positions, yout,
-                    self._N_cols
-                    )
-            elif self.expansion_limit in ['octupole']:
-                dipole_Bz_sus(
-                    xin, self.N_sensors, self.N_particles,
-                    self.particle_positions, self.scan_positions, yout,
-                    self._N_cols
-                    )
-                quadrupole_Bz_sus(
-                    xin, self.N_sensors, self.N_particles,
-                    self.particle_positions, self.scan_positions, yout,
-                    self._N_cols
-                    )
-                octupole_Bz_sus(
-                    xin, self.N_sensors, self.N_particles,
-                    self.particle_positions, self.scan_positions, yout,
-                    self._N_cols
-                    )
+
+            for FSus in self.matvecList:
+                FSus(xin, self.N_sensors, self.N_particles,
+                     self.particle_positions, self.scan_positions, yout,
+                     self._N_cols)
+
         return yout
 
     def _rmatvec(self, xin):
         # x is the data vector, output y is adjoint magnetic moment vector
         yout = np.zeros(self.shape[1])
         if self.optimization == 'numba':
-            if self.expansion_limit in ['dipole']:
-                dipole_Bz_sus_t(
-                    xin, self.particle_positions, self.scan_positions,
-                    yout, self.N_particles, self._N_cols
-                    )
-            elif self.expansion_limit in ['quadrupole']:
-                dipole_Bz_sus_t(
-                    xin, self.particle_positions, self.scan_positions,
-                    yout, self.N_particles, self._N_cols
-                    )
-                quadrupole_Bz_sus_t(
-                    xin, self.particle_positions, self.scan_positions,
-                    yout, self.N_particles, self._N_cols
-                    )
-            elif self.expansion_limit in ['octupole']:
-                dipole_Bz_sus_t(
-                    xin, self.particle_positions, self.scan_positions,
-                    yout, self.N_particles, self._N_cols
-                    )
-                quadrupole_Bz_sus_t(
-                    xin, self.particle_positions, self.scan_positions,
-                    yout, self.N_particles, self._N_cols
-                    )
-                octupole_Bz_sus_t(
-                    xin, self.particle_positions, self.scan_positions,
-                    yout, self.N_particles, self._N_cols
-                    )
+            for RFSus in self.rmatvecList:
+                RFSus(xin, self.particle_positions, self.scan_positions,
+                      yout, self.N_particles, self._N_cols)
         return yout
