@@ -26,6 +26,9 @@ from typing import Literal  # Working with Python >3.8
 from typing import Union    # Working with Python >3.8
 from . import plot_tools as pt
 
+# Import pylops and linearoperator
+from pylops import optimization.leastsquares.NormalEquationsInversion as pylinv
+from .susceptibility_modules.pylops import pylopsclass.GreensMatrix as GreensMatrix
 # -----------------------------------------------------------------------------
 
 _SusOptions = Literal['spherical_harmonics_basis',
@@ -315,6 +318,7 @@ class MultipoleInversion(object):
             print(f'Generation of Q matrix took: {t1 - t0:.4f} s')
         # print('Q shape:', Q.shape)
 
+    _InvMethodOps = Literal['np_pinv', 'sp_pinv', 'sp_pinv2', 'pylops']
     def compute_inversion(self,
                           method: _InvMethodOps = 'sp_pinv',
                           sigma_field_noise: Optional[float] = None,
@@ -335,6 +339,7 @@ class MultipoleInversion(object):
                 np_pinv  -> Numpy's pinv
                 sp_pinv  -> Scipy's pinv (not recommended -> memory issues)
                 sp_pinv2 -> Scipy's pinv2 (this will call sp_pinv instead)
+                pylops   -> calculates inverse iteratively memory efficient
         sigma_field_noise
             If a `float` is specified, a covariance matrix is produced and
             stored in the `covariance_matrix` variable. This matrix uses
@@ -350,46 +355,67 @@ class MultipoleInversion(object):
             recommended to use `atol` and `rtol`. See their documentations for
             detailed information.
         """
-        if self.Q.size == 0:
+        if method == 'pylops':
             if self.verbose:
-                print('Generating forward matrix')
-            self.generate_forward_matrix()
-
-        if method == 'np_pinv':
-            if self.verbose:
-                print('Using numpy.pinv for inversion')
-            self.IQ = np.linalg.pinv(self.Q, **method_kwargs)
-        elif method == 'sp_pinv' or method == 'sp_pinv2':
-            if self.verbose:
-                print('Using scipy.linalg.pinv for inversion')
-            self.IQ = slin.pinv(self.Q, **method_kwargs)
-        # elif method == 'tf_pinv':
-        #     if self.verbose:
-        #         print('Using tf.linalg.pinv for inversion')
-        #     self.IQ = tf.linalg.pinv(self.Q, rcond=rcond, **method_kwargs)
+                print('Using the pylops library for iterative inversion')
+            scan_positions = np.ones((self.N_sensors, 3))
+            X_pos, Y_pos = np.meshgrid(self.Sx_range, self.Sy_range)
+            scan_positions[:, :2] = np.stack((X_pos, Y_pos),
+                                             axis=2).reshape(-1, 2)
+            scan_positions[:, 2] *= self.Hz
+            Dlop = GreensMatrix(self.N_sensors, self._N_cols, self.N_particles,
+                                self.particle_positions, self.expansion_limit,
+                                scan_positions, self.verbose)
+            self.inv_multipole_moments, info = pylinv(Dlop, None,
+                                                      self.Bz_array,
+                                                      returninfo=True)
+            self.inv_multipole_moments.shape = (self.N_particles, self._N_cols)
+            if info != 0:
+                raise Exception(f'Inversion failed, errorcode: {info}')
         else:
-            raise ValueError(f'Method {method} not implemented')
+            if self.Q.size == 0:
+                if self.verbose:
+                    print('Generating forward matrix')
+                self.generate_forward_matrix()
 
-        # print('Bz_data shape OLD:', Bz_array.shape)
-        Bz_Data = np.reshape(self.Bz_array, self.N_sensors, order='C')
-        # print('Bz_data shape:', Bz_Data.shape)
-        # print('IQ shape:', IQ.shape)
-        self.inv_multipole_moments = np.dot(self.IQ, Bz_Data)
-        self.inv_multipole_moments.shape = (self.N_particles, self._N_cols)
-        # print('mags:', mags.shape)
+            if method == 'np_pinv':
+                if self.verbose:
+                    print('Using numpy.pinv for inversion')
+                self.IQ = np.linalg.pinv(self.Q, **method_kwargs)
+            elif method == 'sp_pinv' or method == 'sp_pinv2':
+                if self.verbose:
+                    print('Using scipy.linalg.pinv for inversion')
+                self.IQ = slin.pinv(self.Q, **method_kwargs)
+            # elif method == 'tf_pinv':
+            #     if self.verbose:
+            #         print('Using tf.linalg.pinv for inversion')
+            #     self.IQ = tf.linalg.pinv(self.Q, rcond=rcond, **method_kwargs)
+            else:
+                raise TypeError(f'Method {method} not implemented')
 
-        # Forward field
-        self.inv_Bz_array = np.matmul(self.Q,
-                                      self.inv_multipole_moments.reshape(-1))
-        self.inv_Bz_array.shape = (self.Ny_surf, -1)
+            # print('Bz_data shape OLD:', Bz_array.shape)
+            Bz_Data = np.reshape(self.Bz_array, self.N_sensors, order='C')
+            # print('Bz_data shape:', Bz_Data.shape)
+            # print('IQ shape:', IQ.shape)
+            self.inv_multipole_moments = np.dot(self.IQ, Bz_Data)
+            self.inv_multipole_moments.shape = (self.N_particles, self._N_cols)
+            # print('mags:', mags.shape)
 
-        # Generate covariance matrix if sigma not none
-        if isinstance(sigma_field_noise, float):
-            self.covariance_matrix = (sigma_field_noise ** 2) * np.matmul(self.IQ, self.IQ.transpose())
-            # Compute the std deviation in the mag moments solutions
-            self.inv_moments_std = np.sqrt(np.diag(self.covariance_matrix))
-            # Reshape into (N_particles, N_multipoles) matrix
-            self.inv_moments_std.shape = (self.N_particles, -1)
+            # Forward field
+            self.inv_Bz_array = np.matmul(
+                self.Q, self.inv_multipole_moments.reshape(-1)
+                )
+            self.inv_Bz_array.shape = (self.Ny_surf, -1)
+
+            # Generate covariance matrix if sigma not none
+            if isinstance(sigma_field_noise, float):
+                self.covariance_matrix =\
+                    (sigma_field_noise ** 2) *\
+                    np.matmul(self.IQ, self.IQ.transpose())
+                # Compute the std deviation in the mag moments solutions
+                self.inv_moments_std = np.sqrt(np.diag(self.covariance_matrix))
+                # Reshape into (N_particles, N_multipoles) matrix
+                self.inv_moments_std.shape = (self.N_particles, -1)
 
     def save_multipole_moments(self,
                                save_name: str = 'TIME_STAMP',
