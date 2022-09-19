@@ -11,9 +11,30 @@ import numba
 def multipole_Bz_sus(dip_r, pos_r, Q, n_col_stride,
                      dx_sensor, dy_sensor, dz_sensor,
                      multipole_order):
-    """
-    Sensor-Volume calculation of the dipole susceptibility contribution
-    WARNING: Q should be zeroes
+    """Populate the susceptibility matrix using sensors with 3D-cuboid geometry
+
+    The sensors from the scanning surface are modelled as cuboids with volume.
+    The susceptibility matrix is computed by integrating the Bz field in this
+    volume, thus the flux is computed in units of Tesla m^3. In the main
+    `MultipoleInversion` class the volume flux might be scaled by the volume
+    to obtain the average volume within the scan sensor.
+
+    Parameters
+    ----------
+    dip_r
+        `N x 3` array with the positions of the magnetic point sources
+    pos_r
+        `P x 3` array with the positions of `P` sensors that define the
+        scanning surface
+    Q
+        Susceptibility / Forward matrix to be populated. Check that `Q` entries
+        are zero before calling this function
+    n_col_stride
+        Number of column strides to populate the `Q` matrix. This is defined
+        by the multipole order of the potential expansion
+    dx_sensor, dy_sensor, dz_sensor
+        Half lengths of the sensor volume
+    multipole_order
     """
     f = 1e-7
     for i, ref_pos in enumerate(pos_r):
