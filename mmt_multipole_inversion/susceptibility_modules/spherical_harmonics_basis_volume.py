@@ -11,13 +11,37 @@ import numba
 def multipole_Bz_sus(dip_r, pos_r, Q, n_col_stride,
                      dx_sensor, dy_sensor, dz_sensor,
                      multipole_order):
-    """Populate the susceptibility matrix using sensors with 3D-cuboid geometry
+    r"""Populate the susceptibility matrix using sensors with 3D-cuboid geometry
 
     The sensors from the scanning surface are modelled as cuboids with volume.
     The susceptibility matrix is computed by integrating the Bz field in this
     volume, thus the flux is computed in units of Tesla m^3. In the main
-    `MultipoleInversion` class the volume flux might be scaled by the volume
-    to obtain the average volume within the scan sensor.
+    `MultipoleInversion` class the volume flux might be scaled by the volume to
+    obtain the average volume within the scan sensor. The volume flux is
+    computed as::
+
+                      _           _  t(2)  1(2)     t(2)  2(2)          t(3)  1(3)       _
+        Vol_flux =   /  dx dy dz |  Θ     P     +  Θ     P     + ... + Θ     P     + ...  |
+                   _/            |_  1     z        2     z             1     z          _|
+
+                                     Dipole                            Quadrupole
+
+    where Θ are the multipole moments (in tensor basis) and Pz are the
+    z-component spherical harmonic polynomials which have to be integrated. For
+    instance::
+
+                         _   _      _
+         2(2)        ∂  |  \/2  x z  |
+        P      =  -  -- |  --------  |  ,  R = ( x^2 + y^2 + z^2 )^(1/2)
+         z           ∂z |_    R^5   _|
+
+    Notice that the `dz` integration can be "cancelled" with the `∂z` field
+    derivative. The susceptibility matrix, therefore, will contain these
+    polynomial integrated in the cuboid volume of the sensor, which are
+    multiplied by the components of the magnetic moments column vector. Every
+    row of the susceptibility matrix will contain the integrals for all
+    magnetic sources and for one sensor position, since
+    `r = (x, y, z) = sensor_pos - magnetic_source_pos`.
 
     Parameters
     ----------
@@ -35,6 +59,11 @@ def multipole_Bz_sus(dip_r, pos_r, Q, n_col_stride,
     dx_sensor, dy_sensor, dz_sensor
         Half lengths of the sensor volume
     multipole_order
+        Expansion order of the magnetic potential
+
+    Notes
+    -----
+    The integration of the polynomials were obtained mostly with W. Mathematica
     """
     f = 1e-7
     for i, ref_pos in enumerate(pos_r):

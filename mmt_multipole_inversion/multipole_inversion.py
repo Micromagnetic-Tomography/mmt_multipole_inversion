@@ -31,6 +31,7 @@ from . import plot_tools as pt
 _SusOptions = Literal['spherical_harmonics_basis',
                       'maxwell_cartesian_polynomials',
                       'cartesian_spherical_harmonics',
+                      'spherical_harmonics_basis_area',
                       'spherical_harmonics_basis_volume'
                       ]
 _ExpOptions = Literal['dipole', 'quadrupole', 'octupole']
@@ -93,15 +94,16 @@ class MultipoleInversion(object):
             populate the forward matrix with the assumption that sensors are a
             point, which can be seen as sensors with an area or volume where
             the magnetic flux from the sources is treated as constant.
-            Alternatively, susceptibility modules ending with `_volume` have
-            the assumption that sensors have a cuboid volume where the magnetic
-            flux is integrated within it.
-            For details see the comments in the libraries in the
+            Alternatively, susceptibility modules ending with `_area` or
+            `_volume` model the sensors using a geometry with a higher
+            dimension, e.g. a rectangle, where the magnetic flux is integrated
+            within it. For details see the comments in the libraries in the
             `sus_functions_module/` directory and the Notes.
 
         Notes
         -----
-        Mathematical details for the multipole inversion can be found in
+        Mathematical details for the multipole inversion can be found in::
+
             D. Cortés-Ortuño, K. Fabian, L. V. de Groot
             Single Particle Multipole Expansions From Micromagnetic Tomography
             G^3, 22(4), e2021GC009663 (2021)
@@ -217,9 +219,9 @@ class MultipoleInversion(object):
 
         Notes
         -----
-        In case of using one of the `_volume` susceptibility modules, where the
-        sensor is modelled in 3D, remember to specify the `self.sensor_dims`
-        tuple with the dimensions of the sensor volume
+        In case of using one of the `_area` or `_volume` susceptibility
+        modules, where the sensor is modelled in 2D or 3D, remember to specify
+        the `self.sensor_dims` tuple with the dimensions of the sensor
         """
         # Moment vec m = [mx[0], my[0], mz[0], ... , mx[N-1], my[N-1], mz[N-1]]
         # Position vector  p = [(x[0], y[0]),  ... , x[
@@ -266,6 +268,17 @@ class MultipoleInversion(object):
                 self.sus_mod.octupole_Bz_sus(self.particle_positions,
                                              scan_positions,
                                              self.Q, self._N_cols)
+        # AREA SENSOR
+        elif optimization == 'numba' and len(self.sensor_dims) == 2:
+            self.sus_mod.multipole_Bz_sus(self.particle_positions, scan_positions,
+                                          self.Q, self._N_cols,
+                                          *self.sensor_dims,
+                                          mp_order[self.expansion_limit]
+                                          )
+            aream = 1 / (4 * self.sensor_dims[0] * self.sensor_dims[1])
+            # Convert area flux to average flux per sensor
+            np.multiply(self.Q, aream, out=self.Q)
+        # VOLUME SENSOR
         elif optimization == 'numba' and len(self.sensor_dims) == 3:
             self.sus_mod.multipole_Bz_sus(self.particle_positions, scan_positions,
                                           self.Q, self._N_cols,
@@ -276,7 +289,7 @@ class MultipoleInversion(object):
             # Convert volume flux to average flux per sensor
             np.multiply(self.Q, volm, out=self.Q)
         else:
-            print('Invalid optimization choice and sensor_dims values')
+            print('Invalid optimization choice or sensor_dims values')
             return None
 
         t1 = time.time()

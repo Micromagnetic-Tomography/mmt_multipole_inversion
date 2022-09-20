@@ -4,30 +4,30 @@ import mmt_multipole_inversion.multipole_inversion as minv
 from pathlib import Path
 import pytest
 
-
-TEST_SAVEDIR = Path('TEST_TMP')
-TEST_SAVEDIR.mkdir(exist_ok=True)
-
 LIMIT_params = ['dipole', 'quadrupole', 'octupole']
 
 
-def fw_model_fun():
+def fw_model_fun(sensor_dx=1e-6, sensor_dy=1e-6, overwrite=False,
+                 SAVEDIR='TEST_TMP'):
     """
     """
 
+    TEST_SAVEDIR = Path(SAVEDIR)
+    TEST_SAVEDIR.mkdir(exist_ok=True)
+
     # Check if save dir is empty (wont check for specific npz and json names)
-    if any(TEST_SAVEDIR.iterdir()):
+    if not overwrite and any(TEST_SAVEDIR.iterdir()):
         print(f'Save dir {TEST_SAVEDIR} not empty, skipping this function')
         return
 
-    Hz = 1e-6       # Scan height in m
-    Sx = 20e-6      # Scan area x - dimension in m
-    Sy = 20e-6      # Scan area y - dimension in m
-    Sdx = 1e-6      # Scan x - step in m
-    Sdy = 1e-6      # Scan y - step in m
-    Lx = Sx * 1.0   # Sample x - dimension in m
-    Ly = Sy * 1.0   # Sample y - dimension in m
-    Lz = 10e-6      # Sample thickness in m
+    Hz = 1e-6         # Scan height in m
+    Sx = 20e-6        # Scan area x - dimension in m
+    Sy = 20e-6        # Scan area y - dimension in m
+    Sdx = sensor_dx   # Scan x - step in m
+    Sdy = sensor_dy   # Scan y - step in m
+    Lx = Sx * 1.0     # Sample x - dimension in m
+    Ly = Sy * 1.0     # Sample y - dimension in m
+    Lz = 10e-6        # Sample thickness in m
 
     # Initialise the dipole class
     sample = msp.MagneticSample(Hz, Sx, Sy, Sdx, Sdy, Lx, Ly, Lz,
@@ -59,6 +59,8 @@ def fw_model_fun():
 
 @pytest.mark.parametrize("limit", LIMIT_params, ids=['dip', 'quad', 'oct'])
 def test_inversion_single_dipole_numba(limit):
+
+    TEST_SAVEDIR = Path('TEST_TMP')
 
     # Generate arrays from the Forward model using a single dipole source
     fw_model_fun()
@@ -93,6 +95,7 @@ def test_inversion_single_dipole_numba(limit):
 def test_compare_cuda_numba_populate_array(limit):
     """
     """
+    TEST_SAVEDIR = Path('TEST_TMP')
 
     inv_model = minv.MultipoleInversion(
         TEST_SAVEDIR / 'MetaDict_fw_model_test_inversion.json',
@@ -138,6 +141,8 @@ def test_compare_cuda_numba_populate_array(limit):
 @pytest.mark.parametrize("limit", LIMIT_params, ids=['dip', 'quad', 'oct'])
 def test_inversion_single_dipole_cuda(limit):
 
+    TEST_SAVEDIR = Path('TEST_TMP')
+
     # Generate arrays from the Forward model using a single dipole source
     fw_model_fun()
 
@@ -167,6 +172,8 @@ def test_inversion_single_dipole_cuda(limit):
 
 
 def test_inversion_single_dipole_numba_sensor_3D(limit):
+
+    TEST_SAVEDIR = Path('TEST_TMP')
 
     # Generate arrays from the Forward model using a single dipole source
     fw_model_fun()
@@ -199,8 +206,48 @@ def test_inversion_single_dipole_numba_sensor_3D(limit):
         print(inv_model.inv_multipole_moments[0][i])
         # assert rel_diff < 1e-5
 
+
+def test_inversion_single_dipole_numba_sensor_2D(limit):
+
+    TEST_SAVEDIR = Path('TEST_TMP_2D')
+
+    # Generate arrays from the Forward model using a single dipole source
+    fw_model_fun(sensor_dx=0.1e-6, sensor_dy=0.1e-6, overwrite=True,
+                 SAVEDIR=TEST_SAVEDIR)
+
+    inv_model = minv.MultipoleInversion(
+            TEST_SAVEDIR / 'MetaDict_fw_model_test_inversion.json',
+            TEST_SAVEDIR / 'MagneticSample_fw_model_test_inversion.npz',
+            expansion_limit=limit,
+            sus_functions_module='spherical_harmonics_basis_area'
+            )
+    inv_model.sensor_dims = (0.1e-6, 0.1e-6)
+    # inv_model.Sdx = 0.1e-6
+    # inv_model.Sdy = 0.1e-6
+    inv_model.generate_measurement_mesh()
+    inv_model.generate_forward_matrix(optimization='numba')
+    print(inv_model.Q)
+    inv_model.compute_inversion()
+
+    Ms = 1e5
+    orientation = np.array([1., 0., 1.])
+    orientation /= np.linalg.norm(orientation)
+    expected_magnetization = Ms * (1 * 1e-18) * orientation
+
+    # Compare the inverted dipole moments from the theoretical value by
+    # analyzing the relative error
+    for i in range(3):
+        rel_diff = abs(inv_model.inv_multipole_moments[0][i] -
+                       expected_magnetization[i])
+        if expected_magnetization[i] > 0:
+            rel_diff /= abs(expected_magnetization[i])
+        # print(rel_diff)
+        print(inv_model.inv_multipole_moments[0][i])
+        # assert rel_diff < 1e-5
+
+
 if __name__ == '__main__':
-    # fw_model_fun()
+    fw_model_fun(overwrite=True)
 
     # test_inversion_single_dipole_numba(limit='dipole')
     # test_inversion_single_dipole_numba(limit='quadrupole')
@@ -213,4 +260,5 @@ if __name__ == '__main__':
     # test_inversion_single_dipole(limit='octupole')
 
     test_inversion_single_dipole_numba(limit='quadrupole')
-    test_inversion_single_dipole_numba_sensor_3D('quadrupole')
+    # test_inversion_single_dipole_numba_sensor_3D('quadrupole')
+    test_inversion_single_dipole_numba_sensor_2D('quadrupole')
