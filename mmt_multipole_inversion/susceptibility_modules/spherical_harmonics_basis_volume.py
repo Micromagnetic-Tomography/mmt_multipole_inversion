@@ -20,9 +20,9 @@ def multipole_Bz_sus(dip_r, pos_r, Q, n_col_stride,
     obtain the average volume within the scan sensor. The volume flux is
     computed as::
 
-                      _           _  t(2)  1(2)     t(2)  2(2)          t(3)  1(3)       _
-        Vol_flux =   /  dx dy dz |  Θ     P     +  Θ     P     + ... + Θ     P     + ...  |
-                   _/            |_  1     z        2     z             1     z          _|
+                      _           _  t(1)  1(1)          t(1)  3(1)    t(2)  1(2)       _
+        Vol_flux =   /  dx dy dz |  Θ     P     + ... + Θ     P     + Θ     P     + ...  |
+                   _/            |_  1     z             3     z       1     z          _|
 
                                      Dipole                            Quadrupole
 
