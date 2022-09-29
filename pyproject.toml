@@ -28,10 +28,12 @@ matplotlib = "^3.2"
 numba = ">=0.55.2"
 Cython = "^0.29.30"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
+jupyter = "^1.0.0"
 pytest = "^7.1.2"
 requests = "^2.28.1"
 Shapely = "^1.8.4"
+jupytext = "^1.14.1"
 
 [build-system]
 requires = ["setuptools", "poetry-core>=1.1.14", "cython"]
