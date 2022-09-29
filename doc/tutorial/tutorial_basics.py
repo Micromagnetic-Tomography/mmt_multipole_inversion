@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.0
+#       jupytext_version: 1.14.1
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -42,12 +42,9 @@ import importlib as imp  # to reload libraries if implementing new features
 
 # %%
 # Load the libraries for the calculation of dipole fields
-import multipole_inversion as minv
-from multipole_inversion import MultipoleInversion
-from multipole_inversion import MagneticSample
-# import multipole_inversion.multipole_inversion as minv_mpi
-import multipole_inversion.magnetic_sample as msp
-import multipole_inversion.plot_tools as mpipt
+import mmt_multipole_inversion as minv
+from mmt_multipole_inversion import MultipoleInversion
+from mmt_multipole_inversion import MagneticSample
 
 
 # %%
@@ -101,7 +98,7 @@ positions = np.column_stack([X.ravel(), Y.ravel(), np.zeros_like(X.ravel())])
 
 # %%
 # Bz = msp.dipole_Bz(dip_r, dip_m, positions)
-B = msp.dipole_field(dip_r, dip_m, positions)
+B = minv.magnetic_sample.dipole_field(dip_r, dip_m, positions)
 
 # %% [markdown]
 # We can now plot the dipole field around the origin, isolines are plotted for the $B_z$ component
@@ -191,7 +188,7 @@ c2.set_color('C3')
 x, y = sample.Sx_range, sample.Sy_range
 X, Y = np.meshgrid(x, y)
 positions = np.column_stack([X.ravel(), Y.ravel(), sample.Hz * np.ones_like(X.ravel())])
-B = msp.dipole_field(sample.dipole_positions, sample.dipole_moments, positions)
+B = minv.magnetic_sample.dipole_field(sample.dipole_positions, sample.dipole_moments, positions)
 # Generate random seed points from where streamlines emerge (density not
 # necessary if random seeds are used)
 seed_points_x = sample.Lx * np.random.random(150)
@@ -216,11 +213,12 @@ sample.save_data(filename='dipole_y-orientation')
 
 # %%
 qinv = MultipoleInversion('./MetaDict_dipole_y-orientation.json',
-                          './MagneticSample_dipole_y-orientation.npz')
-qinv.compute_inversion(method='sp_pinv2')
+                          './MagneticSample_dipole_y-orientation.npz',
+                          expansion_limit='quadrupole')
+qinv.compute_inversion(method='sp_pinv2', atol=1e-25)
 
 f, ax = plt.subplots()
-cf, c1, c2 = minv_mpi.plot_inversion_Bz(qinv, ax)
+cf, c1, c2 = minv.plot_tools.plot_inversion_Bz(ax, qinv)
 colorbar(cf)
 ax.set_aspect('equal')
 
@@ -229,7 +227,7 @@ ax.set_aspect('equal')
 
 # %%
 f, ax = plt.subplots()
-cf, c1 = minv_mpi.plot_difference_Bz(qinv, ax)
+cf, c1 = minv.plot_tools.plot_difference_Bz(ax, qinv)
 colorbar(cf)
 ax.set_aspect('equal')
 
@@ -329,7 +327,7 @@ qinv.compute_inversion(method='sp_pinv2')
 
 # %%
 f, ax = plt.subplots()
-cf, c1, c2 = minv_mpi.plot_inversion_Bz(qinv, ax)
+cf, c1, c2 = minv.plot_tools.plot_inversion_Bz(ax, qinv)
 colorbar(cf)
 ax.set_aspect('equal')
 
@@ -352,7 +350,7 @@ qinv.inv_multipole_moments
 
 # %%
 f, ax = plt.subplots()
-cf, c1 = minv_mpi.plot_difference_Bz(qinv, ax)
+cf, c1 = minv.plot_tools.plot_difference_Bz(ax, qinv)
 colorbar(cf)
 ax.set_aspect('equal')
 
@@ -402,9 +400,6 @@ sample.N_particles = 1  # Need to modify the JSON file!
 sample.save_data(filename='quadrupole_x-orientation')
 
 # %%
-minv.MultipoleInversion
-
-# %%
 qinv = minv.MultipoleInversion('./MetaDict_quadrupole_x-orientation.json',
                                './MagneticSample_quadrupole_x-orientation.npz',
                                sus_functions_module='maxwell_cartesian_polynomials')
@@ -432,7 +427,7 @@ Lx = Sx * 0.9  # Sample x - dimension in m
 Ly = Sy * 0.9  # Sample y - dimension in m
 Lz = 5e-6  # Sample thickness in m
 
-sample = msp.MagneticSample(Hz, Sx, Sy, Sdx, Sdy, Lx, Ly, Lz)
+sample = MagneticSample(Hz, Sx, Sy, Sdx, Sdy, Lx, Ly, Lz)
 # Manually set positions
 Ms = 4.8e5
 dipole_positions = np.array([[sample.Lx * 0.5 - 1e-6, sample.Ly * 0.5 - 1e-6, -sample.Lz * 0.5],
@@ -478,12 +473,15 @@ qinv.inv_multipole_moments
 
 # %%
 f, ax = plt.subplots()
-cf, c1, c2 = minv_mpi.plot_inversion_Bz(qinv, ax)
+cf, c1, c2 = minv.plot_tools.plot_inversion_Bz(ax, qinv)
 colorbar(cf)
 ax.set_aspect('equal')
 
 # %% [markdown]
 # ## Octupole
+
+# %% [markdown]
+# In this case we generate an artificial octupole using four dipoles. Below it can be seen that the inversion fails to produce an optimal solution for the octupole. It is possible to obtain a better solution by defining the octupole using two quadrupoles with two point sources, rather than a single point source.
 
 # %%
 Hz = 2e-6  # Scan height in m
@@ -495,7 +493,7 @@ Lx = Sx * 0.9  # Sample x - dimension in m
 Ly = Sy * 0.9  # Sample y - dimension in m
 Lz = 5e-6  # Sample thickness in m
 
-sample = msp.MagneticSample(Hz, Sx, Sy, Sdx, Sdy, Lx, Ly, Lz)
+sample = MagneticSample(Hz, Sx, Sy, Sdx, Sdy, Lx, Ly, Lz)
 # Manually set positions
 Ms = 4.8e5
 dipole_positions = np.array([[sample.Lx * 0.5 + 1e-6, sample.Ly * 0.5 + 1e-6, -sample.Lz * 0.5],
@@ -546,22 +544,22 @@ sample.save_data(filename='octupole')
 # sample.save_data(filename='octupole')
 
 # %%
-qinv = minv.MultipoleInversion('./MetaDict_octupole.json',
+oinv = minv.MultipoleInversion('./MetaDict_octupole.json',
                                './MagneticSample_octupole.npz',
                                expansion_limit='octupole',
                                sus_functions_module='spherical_harmonics_basis'
                                )
-qinv.compute_inversion(method='sp_pinv2', rcond=1e-20)
+oinv.compute_inversion(method='sp_pinv2', atol=1e-20)
 
 # %%
 f, ax = plt.subplots()
-cf, c1, c2 = minv_mpi.plot_inversion_Bz(qinv, ax)
+cf, c1, c2 = minv.plot_tools.plot_inversion_Bz(ax, oinv)
 ax.set_aspect('equal')
 colorbar(cf)
 
 # %%
 f, ax = plt.subplots()
-cf, c1 = minv_mpi.plot_difference_Bz(qinv, ax)
+cf, c1 = minv.plot_tools.plot_difference_Bz(ax, oinv)
 ax.set_aspect('equal')
 colorbar(cf)
 
@@ -581,7 +579,7 @@ Lx = Sx * 0.9  # Sample x - dimension in m
 Ly = Sy * 0.9  # Sample y - dimension in m
 Lz = 30e-6  # Sample thickness in m
 
-sample = msp.MagneticSample(Hz, Sx, Sy, Sdx, Sdy, Lx, Ly, Lz)
+sample = MagneticSample(Hz, Sx, Sy, Sdx, Sdy, Lx, Ly, Lz)
 
 sample.generate_random_particles(seed=42)
 # print(sample.dipole_positions)
@@ -622,7 +620,7 @@ qinv.inv_multipole_moments[:10]
 
 # %%
 f, ax = plt.subplots(figsize=(6, 6))
-cf, c1, c2 = minv_mpi.plot_inversion_Bz(qinv, ax)
+cf, c1, c2 = minv.plot_tools.plot_inversion_Bz(ax, qinv)
 c2.set_sizes(c2.get_sizes() / 4)
 colorbar(cf)
 ax.set_aspect('equal')
@@ -636,7 +634,7 @@ plt.legend()
 
 # %%
 f, ax = plt.subplots(figsize=(6, 6))
-cf, c1 = minv_mpi.plot_difference_Bz(qinv, ax)
+cf, c1 = minv.plot_tools.plot_difference_Bz(ax, qinv)
 colorbar(cf)
 ax.set_aspect('equal')
 
