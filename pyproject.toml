@@ -25,7 +25,7 @@ python = ">=3.8,<3.11"
 numpy = "^1.21,<1.23"
 scipy = "^1.7.0"
 matplotlib = "^3.2"
-numba = ">=0.55.2"
+numba = ">=0.56"
 Cython = "^0.29.30"
 
 [tool.poetry.group.dev.dependencies]
