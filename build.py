@@ -74,8 +74,9 @@ def locate_cuda():
         if cudaenv in os.environ:
             home = os.environ[cudaenv]
             nvcc = pjoin(home, 'bin', 'nvcc')
+            break
     else:
-        # otherwise, search the PATH for NVCC
+        # Otherwise, search the bin PATH for NVCC, e.g. /usr/local/cuda-11.x/bin
         nvcc = find_in_path('nvcc', os.environ['PATH'])
         if nvcc is None:
             # print(
@@ -95,10 +96,6 @@ def locate_cuda():
             return False
 
     return cudaconfig
-
-
-CUDA = locate_cuda()
-# print(CUDA)
 
 
 def customize_compiler_for_nvcc(self):
@@ -146,6 +143,15 @@ class custom_build_ext(build_ext):
         customize_compiler_for_nvcc(self.compiler)
         build_ext.build_extensions(self)
 
+# -----------------------------------------------------------------------------
+
+CUDA = locate_cuda()
+
+if CUDA is False:
+    print("\nCUDAHOME or CUDA_PATH env variables not found: skipping cuda extensions")
+    cmdclass = {'build_ext': build_ext}
+else:
+    cmdclass = {'build_ext': custom_build_ext}
 
 # -----------------------------------------------------------------------------
 # Compilation of CPP modules
@@ -196,14 +202,6 @@ if CUDA:
                   runtime_library_dirs=[CUDA['lib64']]
         )
     )
-
-# -----------------------------------------------------------------------------
-
-if CUDA is False:
-    print("\nCUDAHOME or CUDA_PATH env variables not found: skipping cuda extensions")
-    cmdclass = {'build_ext': build_ext}
-else:
-    cmdclass = {'build_ext': custom_build_ext}
 
 # -----------------------------------------------------------------------------
 
