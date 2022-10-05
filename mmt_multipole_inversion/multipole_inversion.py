@@ -185,6 +185,9 @@ class MultipoleInversion(object):
             raise Exception('Specify a valid expansion limit for the multipole calculation')
         self._expansion_limit = string_value
 
+        # Reset the Q matrix whose size depends on _N_cols
+        self.Q = np.empty(0)
+
     def generate_measurement_mesh(self):
         """Generate coordinates for the measurement mesh
 
