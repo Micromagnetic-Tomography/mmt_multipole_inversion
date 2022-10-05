@@ -226,14 +226,15 @@ class MultipoleInversion(object):
         modules, where the sensor is modelled in 2D or 3D, remember to specify
         the `self.sensor_dims` tuple with the dimensions of the sensor
         """
+        # WARNING: Not checking wrong types here, we rely on Type hints
+
         # Moment vec m = [mx[0], my[0], mz[0], ... , mx[N-1], my[N-1], mz[N-1]]
         # Position vector  p = [(x[0], y[0]),  ... , x[
         # Generate  forward matrix
         # Q[i, j] =
 
-        # The the total flux array according to the specified expansion limit
-        self.Q = np.zeros(shape=(self.N_sensors,
-                                 self._N_cols * self.N_particles))
+        # The total flux array according to the specified expansion limit
+        self.Q = np.zeros(shape=(self.N_sensors, self._N_cols * self.N_particles))
 
         # print('pos array:', particle_positions.shape)
         t0 = time.time()
@@ -245,55 +246,66 @@ class MultipoleInversion(object):
         scan_positions[:, 2] *= self.Hz
         mp_order = {'dipole': 1, 'quadrupole': 2, 'octupole': 3}
 
-        if optimization == 'cuda' and len(self.sensor_dims) == 0:
-            if HASCUDA is False:
-                raise Exception('The cuda method is not available. Stopping calculation')
+        if optimization == 'cuda':
+            if len(self.sensor_dims) == 0:
+                if HASCUDA is False:
+                    raise RuntimeError('The cuda method is not available. Stopping calculation')
 
-            sus_cudalib.SHB_populate_matrix(self.particle_positions,
-                                            scan_positions,
-                                            self.Q,
-                                            self.N_particles, self.N_sensors,
-                                            mp_order[self.expansion_limit],
-                                            self.verbose)
+                sus_cudalib.SHB_populate_matrix(self.particle_positions,
+                                                scan_positions,
+                                                self.Q,
+                                                self.N_particles, self.N_sensors,
+                                                mp_order[self.expansion_limit],
+                                                self.verbose)
 
         # For all the particles, whose positions are stored in the pos array
         # (N_particles x 3), compute the dipole (3 terms), quadrupole (5 terms)
         # or octupole (7 terms) contributions. Here we populate the Q array
         # using the numba-optimised susceptibility functions
-        elif optimization == 'numba' and len(self.sensor_dims) == 0:
-            self.sus_mod.dipole_Bz_sus(self.particle_positions, scan_positions,
-                                       self.Q, self._N_cols)
-            if self.expansion_limit in ['quadrupole', 'octupole']:
-                self.sus_mod.quadrupole_Bz_sus(self.particle_positions,
-                                               scan_positions,
-                                               self.Q, self._N_cols)
-            if self.expansion_limit in ['octupole']:
-                self.sus_mod.octupole_Bz_sus(self.particle_positions,
-                                             scan_positions,
-                                             self.Q, self._N_cols)
-        # AREA SENSOR
-        elif optimization == 'numba' and len(self.sensor_dims) == 2:
-            self.sus_mod.multipole_Bz_sus(self.particle_positions, scan_positions,
-                                          self.Q, self._N_cols,
-                                          *self.sensor_dims,
-                                          mp_order[self.expansion_limit]
-                                          )
-            aream = 1 / (4 * self.sensor_dims[0] * self.sensor_dims[1])
-            # Convert area flux to average flux per sensor
-            np.multiply(self.Q, aream, out=self.Q)
-        # VOLUME SENSOR
-        elif optimization == 'numba' and len(self.sensor_dims) == 3:
-            self.sus_mod.multipole_Bz_sus(self.particle_positions, scan_positions,
-                                          self.Q, self._N_cols,
-                                          *self.sensor_dims,
-                                          mp_order[self.expansion_limit]
-                                          )
-            volm = 1 / (8 * self.sensor_dims[0] * self.sensor_dims[1] * self.sensor_dims[2])
-            # Convert volume flux to average flux per sensor
-            np.multiply(self.Q, volm, out=self.Q)
+        elif optimization == 'numba':
+            if len(self.sensor_dims) == 0:
+                self.sus_mod.dipole_Bz_sus(self.particle_positions, scan_positions,
+                                           self.Q, self._N_cols)
+                if self.expansion_limit in ['quadrupole', 'octupole']:
+                    self.sus_mod.quadrupole_Bz_sus(self.particle_positions,
+                                                   scan_positions,
+                                                   self.Q, self._N_cols)
+                if self.expansion_limit in ['octupole']:
+                    self.sus_mod.octupole_Bz_sus(self.particle_positions,
+                                                 scan_positions,
+                                                 self.Q, self._N_cols)
+
+            # AREA SENSOR
+            elif len(self.sensor_dims) == 2:
+                if self._expansion_limit == 'octupole':
+                    self.Q = np.empty(0)
+                    raise ValueError('Octupole expansion_limit for area sensors not implemented')
+                self.sus_mod.multipole_Bz_sus(self.particle_positions, scan_positions,
+                                              self.Q, self._N_cols,
+                                              *self.sensor_dims,
+                                              mp_order[self.expansion_limit]
+                                              )
+                aream = 1 / (4 * self.sensor_dims[0] * self.sensor_dims[1])
+                # Convert area flux to average flux per sensor
+                np.multiply(self.Q, aream, out=self.Q)
+
+            # VOLUME SENSOR
+            elif len(self.sensor_dims) == 3:
+                if self._expansion_limit == 'octupole':
+                    self.Q = np.empty(0)
+                    raise ValueError('Octupole expansion_limit for volume sensors not implemented')
+                self.sus_mod.multipole_Bz_sus(self.particle_positions, scan_positions,
+                                              self.Q, self._N_cols,
+                                              *self.sensor_dims,
+                                              mp_order[self.expansion_limit]
+                                              )
+                volm = 1 / (8 * self.sensor_dims[0] * self.sensor_dims[1] * self.sensor_dims[2])
+                # Convert volume flux to average flux per sensor
+                np.multiply(self.Q, volm, out=self.Q)
+            else:
+                raise ValueError('Wrong sensor dimensions')
         else:
-            print('Invalid optimization choice or sensor_dims values')
-            return None
+            raise ValueError(f'Optimization {optimization} not valid')
 
         t1 = time.time()
         if self.verbose:
@@ -353,7 +365,7 @@ class MultipoleInversion(object):
         #         print('Using tf.linalg.pinv for inversion')
         #     self.IQ = tf.linalg.pinv(self.Q, rcond=rcond, **method_kwargs)
         else:
-            raise TypeError(f'Method {method} not implemented')
+            raise ValueError(f'Method {method} not implemented')
 
         # print('Bz_data shape OLD:', Bz_array.shape)
         Bz_Data = np.reshape(self.Bz_array, self.N_sensors, order='C')
