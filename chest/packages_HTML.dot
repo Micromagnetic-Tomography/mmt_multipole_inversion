@@ -1,0 +1,68 @@
+digraph "packages" {
+    node [shape=folder fontname=FiraMono]
+    mmt_minv [style=filled fillcolor=coral label=<
+        <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0">
+            <TR><TD><B>mmt_multipole_inversion</B></TD></TR>
+        </TABLE>>];
+    minv [label=<
+        <TABLE BORDER="0" CELLBORDER="0" ROWS="*" CELLSPACING="1">
+            <TR><TD><B>multipole_inversion</B></TD></TR>
+            <TR><TD>(Class) MultipoleInversion</TD></TR>
+        </TABLE>>];
+    susc [label=<
+        <TABLE BORDER="0" CELLBORDER="0" ROWS="*" COLUMNS="*" CELLSPACING="1">
+            <TR><TD><B>susceptibility_modules</B></TD></TR>
+            <TR>
+              <TD>spherical_harmonics_basis</TD>
+              <TD>dipole_Bz_sus<BR/>quadrupole_Bz_sus<BR/>octupole_Bz_sus</TD>
+            </TR>
+            <TR>
+              <TD>spherical_harmonics_basis_area</TD>
+              <TD>dipole_Bz_sus<BR/>...</TD>
+            </TR>
+            <TR>
+              <TD>spherical_harmonics_basis_volume</TD>
+              <TD>dipole_Bz_sus<BR/>...</TD>
+            </TR>
+            <TR>
+              <TD>maxwell_cartesian_polynomials</TD>
+              <TD>...</TD>
+            </TR>
+            <TR>
+              <TD>cartesian_spherical_harmonics</TD>
+              <TD>...</TD>
+            </TR>
+        </TABLE>>];
+    suscCuda [label=<
+        <TABLE BORDER="0" CELLBORDER="0" ROWS="*" COLUMNS="*" CELLSPACING="1">
+            <TR><TD><B>cuda</B></TD></TR>
+            <TR><TD>(cu) spherical_harmonics_basis</TD></TR>
+        </TABLE>>];
+    magsamp [label=<
+        <TABLE BORDER="0" CELLBORDER="0" ROWS="*" COLUMNS="*" CELLSPACING="1">
+            <TR><TD><B>magnetic_sample</B></TD></TR>
+            <TR><TD>(Class) MagneticSample</TD></TR>
+        </TABLE>>];
+    magsampmods [label=<
+        <TABLE BORDER="0" CELLBORDER="0" ROWS="*" COLUMNS="*" CELLSPACING="1">
+            <TR><TD><B>magnetic_sample_modules</B></TD></TR>
+            <TR>
+              <TD>spherical_harmonics_basis</TD>
+              <TD>dipole_Bz<BR/>quadrupole_Bz<BR/>octupole_Bz<BR/></TD>
+            </TR>
+            <TR>
+              <TD>maxwell_cartesian_polynomials</TD>
+              <TD>...</TD>
+            </TR>
+        </TABLE>>];
+    plot [label=<
+        <TABLE BORDER="0" CELLBORDER="0" ROWS="*" COLUMNS="*" CELLSPACING="1">
+            <TR><TD><B>plot_tools</B></TD></TR>
+        </TABLE>>];
+    mmt_minv -> minv;
+    minv -> susc;
+    susc -> suscCuda;
+    mmt_minv -> magsamp;
+    magsamp -> magsampmods;
+    mmt_minv -> plot;
+}
