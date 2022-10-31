@@ -70,10 +70,13 @@ class MultipoleInversion(object):
                 Scan y-step Sdy
                 Number of particles
                 Time stamp
-            Optional::
-                Scan origin x
-                Scan origin y
+            The following are optional::
+                Sensor origin x
+                Sensor origin y
                 Sensor dimensions
+            Sensor dimensions are required if a 2D or 3D sensor is used. The
+            sensor origins are the coordinates of the lower left sensor center,
+            in the scanning surface. By default it is `(0.0, 0.0)`.
         sample_arrays
             An `npz` file containing the scan signal Bz and the particle
             positions (magnetic sources). The file can contain other
@@ -155,10 +158,10 @@ class MultipoleInversion(object):
         self.N_particles = metadict.get("Number of particles")
         self.time_stamp = metadict.get("Time stamp")
 
-        # Set the variables scan_origin_x and scan_origin_y if found in the
-        # dictionary, otherwise set them to 0.0
-        self.scan_origin_x = metadict.get('Scan origin x', 0.0)
-        self.scan_origin_y = metadict.get('Scan origin y', 0.0)
+        # Set the variables scan_sensor_origin_x and scan_sensor_origin_y if
+        # found in the dictionary, otherwise set them to 0.0
+        self.scan_sensor_origin_x = metadict.get('Sensor origin x', 0.0)
+        self.scan_sensor_origin_y = metadict.get('Sensor origin y', 0.0)
 
         self.generate_measurement_mesh()
 
@@ -196,8 +199,8 @@ class MultipoleInversion(object):
         """
 
         # Generate measurement mesh
-        self.Sx_range = self.scan_origin_x + np.arange(round(self.Sx / self.Sdx)) * self.Sdx
-        self.Sy_range = self.scan_origin_y + np.arange(round(self.Sy / self.Sdy)) * self.Sdy
+        self.Sx_range = self.scan_sensor_origin_x + np.arange(round(self.Sx / self.Sdx)) * self.Sdx
+        self.Sy_range = self.scan_sensor_origin_y + np.arange(round(self.Sy / self.Sdy)) * self.Sdy
         self.Nx_surf = len(self.Sx_range)
         self.Ny_surf = len(self.Sy_range)
 
