@@ -14,15 +14,15 @@ digraph "packages" {
             <TR><TD><B>susceptibility_modules</B></TD></TR>
             <TR>
               <TD>spherical_harmonics_basis</TD>
-              <TD>dipole_Bz_sus<BR/>quadrupole_Bz_sus<BR/>octupole_Bz_sus</TD>
+              <TD>(Fn) dipole_Bz_sus<BR/>(Fn) quadrupole_Bz_sus<BR/>(Fn) octupole_Bz_sus</TD>
             </TR>
             <TR>
               <TD>spherical_harmonics_basis_area</TD>
-              <TD>dipole_Bz_sus<BR/>...</TD>
+              <TD>(Fn) dipole_Bz_sus<BR/>...</TD>
             </TR>
             <TR>
               <TD>spherical_harmonics_basis_volume</TD>
-              <TD>dipole_Bz_sus<BR/>...</TD>
+              <TD>(Fn) dipole_Bz_sus<BR/>...</TD>
             </TR>
             <TR>
               <TD>maxwell_cartesian_polynomials</TD>
@@ -48,7 +48,7 @@ digraph "packages" {
             <TR><TD><B>magnetic_sample_modules</B></TD></TR>
             <TR>
               <TD>spherical_harmonics_basis</TD>
-              <TD>dipole_Bz<BR/>quadrupole_Bz<BR/>octupole_Bz<BR/></TD>
+              <TD>(Fn) dipole_Bz<BR/>(Fn) quadrupole_Bz<BR/>(Fn) octupole_Bz<BR/></TD>
             </TR>
             <TR>
               <TD>maxwell_cartesian_polynomials</TD>
@@ -58,11 +58,23 @@ digraph "packages" {
     plot [label=<
         <TABLE BORDER="0" CELLBORDER="0" ROWS="*" COLUMNS="*" CELLSPACING="1">
             <TR><TD><B>plot_tools</B></TD></TR>
+            <TR><TD>(Fn) plot_sample<BR/>(Fn) plot_inversion_Bz<BR/>...</TD></TR>
         </TABLE>>];
-    mmt_minv -> minv;
-    minv -> susc;
-    susc -> suscCuda;
-    mmt_minv -> magsamp;
-    magsamp -> magsampmods;
-    mmt_minv -> plot;
+    multfield [label=<
+        <TABLE BORDER="0" CELLBORDER="0" ROWS="*" COLUMNS="*" CELLSPACING="1">
+            <TR><TD><B>multipole_field</B></TD></TR>
+            <TR>
+                <TD>multipole_field_SHB</TD>
+                <TD>(Fn) Br_field_dipole<BR/>(Fn) Br_field_quadrupole<BR/>...</TD>
+            </TR>
+            <TR>
+                <TD>multipole_field_MCP</TD>
+                <TD>...</TD>
+            </TR>
+        </TABLE>>];
+    rankdir=LR;
+    mmt_minv -> {minv,magsamp,multfield,plot};
+    minv -> susc [dir=back];
+    minv -> suscCuda [dir=back];
+    magsamp -> magsampmods [dir=back];
 }
