@@ -39,7 +39,7 @@ _SusOptions = Literal['spherical_harmonics_basis',
                       ]
 _ExpOptions = Literal['dipole', 'quadrupole', 'octupole']
 _MethodOptions = Literal['numba', 'cuda']
-_InvMethodOps = Literal['np_pinv', 'sp_pinv', 'sp_pinv2']
+_InvMethodOps = Literal['np_pinv', 'sp_pinv', 'sp_pinv2', 'pylops']
 
 
 # TODO: verbose should be more useful for debugging
@@ -318,7 +318,6 @@ class MultipoleInversion(object):
             print(f'Generation of Q matrix took: {t1 - t0:.4f} s')
         # print('Q shape:', Q.shape)
 
-    _InvMethodOps = Literal['np_pinv', 'sp_pinv', 'sp_pinv2', 'pylops']
     def compute_inversion(self,
                           method: _InvMethodOps = 'sp_pinv',
                           sigma_field_noise: Optional[float] = None,
