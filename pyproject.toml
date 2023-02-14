@@ -27,6 +27,7 @@ scipy = "^1.7.0"
 matplotlib = "^3.2"
 numba = ">=0.56"
 Cython = "^0.29.30"
+pylops = ">=2.0.0"
 
 [tool.poetry.group.dev.dependencies]
 jupyter = "^1.0.0"
