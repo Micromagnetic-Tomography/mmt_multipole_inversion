@@ -27,8 +27,9 @@ from typing import Union    # Working with Python >3.8
 from . import plot_tools as pt
 
 # Import pylops and linearoperator
-from pylops import optimization.leastsquares.NormalEquationsInversion as pylinv
-from .susceptibility_modules.pylops import pylopsclass.GreensMatrix as GreensMatrix
+import pylops
+pylinv = pylops.optimization.leastsquares.normal_equations_inversion
+from .susceptibility_modules.pylops.pylopsclass import GreensMatrix
 # -----------------------------------------------------------------------------
 
 _SusOptions = Literal['spherical_harmonics_basis',
@@ -365,9 +366,8 @@ class MultipoleInversion(object):
             Dlop = GreensMatrix(self.N_sensors, self._N_cols, self.N_particles,
                                 self.particle_positions, self.expansion_limit,
                                 scan_positions, self.verbose)
-            self.inv_multipole_moments, info = pylinv(Dlop, None,
-                                                      self.Bz_array,
-                                                      returninfo=True)
+            self.inv_multipole_moments, info = pylinv(Dlop, self.Bz_array,
+                                                      None, **method_kwargs)
             self.inv_multipole_moments.shape = (self.N_particles, self._N_cols)
             if info != 0:
                 raise Exception(f'Inversion failed, errorcode: {info}')
