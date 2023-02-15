@@ -148,7 +148,7 @@ def octupole_Bz_sus_t(xin, dip_r, pos_r, yout, N_particles, _N_cols):
 
 class GreensMatrix(LinearOperator):
     def __init__(self, N_sensors, _N_cols, N_particles, particle_positions,
-                 expansion_limit, scan_positions, verbose,
+                 expansion_limit, scan_positions, verbose=False,
                  optimization='numba', dtype='float64'):
         self.N_sensors = N_sensors
         self._N_cols = _N_cols
@@ -165,6 +165,8 @@ class GreensMatrix(LinearOperator):
         self.optimization = optimization
         self.explicit = False
         self.dtype = dtype
+        self.matvec_count = 0
+        self.rmatvec_count = 0
 
         self.matvecList = [dipole_Bz_sus]
         self.rmatvecList = [dipole_Bz_sus_t]
@@ -179,23 +181,6 @@ class GreensMatrix(LinearOperator):
         # x is input magnetic moment, output y data vector
         yout = np.zeros(self.shape[0])
         # loop through all scan points to calculate magnetic moment
-        # if self.optimization == 'cuda':  # to be tested!
-        #     Q = np.zeros(self.shape[1])
-        #     for i in range(self.shape[0]):
-        #         mp_order = {'dipole': 1, 'quadrupole': 2, 'octupole': 3}
-        #         if HASCUDA is False:
-        #             raise Exception('The cuda method is not available.'
-        #                             'Stopping calculation')
-        #
-        #         sus_cudalib.SHB_populate_matrix(
-        #             self.particle_positions, self.scan_positions[i], Q,
-        #             self.N_particles, 1, mp_order[self.expansion_limit],
-        #             self.verbose
-        #             )
-        #         yout[i] = np.dot(Q, xin)
-
-        # required functions have been copied to this script
-        # might combine functions into one
         if self.optimization == 'numba':
             # reshape the magnetic moment vector to order: [mx1 mx2 ... my1 my2 ... ]
             # so Numba can use the dot product more efficiently

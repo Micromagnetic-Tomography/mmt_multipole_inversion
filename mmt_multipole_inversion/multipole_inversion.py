@@ -366,8 +366,10 @@ class MultipoleInversion(object):
             Dlop = GreensMatrix(self.N_sensors, self._N_cols, self.N_particles,
                                 self.particle_positions, self.expansion_limit,
                                 scan_positions, self.verbose)
-            self.inv_multipole_moments, info = pylinv(Dlop, self.Bz_array,
-                                                      None, **method_kwargs)
+            self.inv_multipole_moments, info = pylinv(Dlop,
+                                                      self.Bz_array.flatten(),
+                                                      None,
+                                                      **method_kwargs)
             self.inv_multipole_moments.shape = (self.N_particles, self._N_cols)
             if info != 0:
                 raise Exception(f'Inversion failed, errorcode: {info}')
