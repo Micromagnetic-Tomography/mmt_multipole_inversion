@@ -29,6 +29,7 @@ from . import plot_tools as pt
 # Import pylops and linearoperator
 import pylops
 pylinv = pylops.optimization.leastsquares.normal_equations_inversion
+pylinv2 = pylops.optimization.leastsquares.regularized_inversion
 from .susceptibility_modules.pylops.pylopsclass import GreensMatrix
 # -----------------------------------------------------------------------------
 
@@ -357,7 +358,7 @@ class MultipoleInversion(object):
         """
         if method == 'pylops':
             if self.verbose:
-                print('Using the pylops library for iterative inversion')
+                print('Using the pylops library for an iterative inversion')
             scan_positions = np.ones((self.N_sensors, 3))
             X_pos, Y_pos = np.meshgrid(self.Sx_range, self.Sy_range)
             scan_positions[:, :2] = np.stack((X_pos, Y_pos),
@@ -366,13 +367,25 @@ class MultipoleInversion(object):
             Dlop = GreensMatrix(self.N_sensors, self._N_cols, self.N_particles,
                                 self.particle_positions, self.expansion_limit,
                                 scan_positions, self.verbose)
-            self.inv_multipole_moments, info = pylinv(Dlop,
-                                                      self.Bz_array.flatten(),
-                                                      None,
-                                                      **method_kwargs)
+            if self.verbose:
+                # self.inv_multipole_moments, info = pylinv(
+                #     Dlop, self.Bz_array.flatten(), None, show=True,
+                #     **method_kwargs)
+                (self.inv_multipole_moments, self.info1, self.info2,
+                 self.info3, self.info4) = pylinv2(
+                    Dlop, self.Bz_array.flatten(), None, show=True,
+                    **method_kwargs)
+
+            else:
+                # self.inv_multipole_moments, info = pylinv(
+                #     Dlop, self.Bz_array.flatten(), None, **method_kwargs)
+                (self.inv_multipole_moments, self.info1, self.info2,
+                 self.info3, self.info4) = pylinv2(
+                    Dlop, self.Bz_array.flatten(), None, show=False,
+                    **method_kwargs)
             self.inv_multipole_moments.shape = (self.N_particles, self._N_cols)
-            if info != 0:
-                raise Exception(f'Inversion failed, errorcode: {info}')
+            # if info != 0:
+            #     raise Exception(f'Inversion failed, errorcode: {info}')
         else:
             if self.Q.size == 0:
                 if self.verbose:
