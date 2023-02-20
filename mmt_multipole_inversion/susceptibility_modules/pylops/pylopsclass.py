@@ -149,7 +149,7 @@ def octupole_Bz_sus_t(xin, dip_r, pos_r, yout, N_particles, _N_cols):
 class GreensMatrix(LinearOperator):
     def __init__(self, N_sensors, _N_cols, N_particles, particle_positions,
                  expansion_limit, scan_positions, verbose=False,
-                 optimization='numba', dtype='float64'):
+                 engine='numba', dtype='float64'):
         self.N_sensors = N_sensors
         self._N_cols = _N_cols
         self.N_particles = N_particles
@@ -162,7 +162,7 @@ class GreensMatrix(LinearOperator):
         self.scan_positions = scan_positions
         self.verbose = verbose
 
-        self.optimization = optimization
+        self.engine = engine
         self.explicit = False
         self.dtype = dtype
         self.matvec_count = 0
@@ -181,7 +181,7 @@ class GreensMatrix(LinearOperator):
         # x is input magnetic moment, output y data vector
         yout = np.zeros(self.shape[0])
         # loop through all scan points to calculate magnetic moment
-        if self.optimization == 'numba':
+        if self.engine == 'numba':
             # reshape the magnetic moment vector to order: [mx1 mx2 ... my1 my2 ... ]
             # so Numba can use the dot product more efficiently
             xin = xin.reshape(self.N_particles, self._N_cols).flatten('F')
@@ -196,7 +196,7 @@ class GreensMatrix(LinearOperator):
     def _rmatvec(self, xin):
         # x is the data vector, output y is adjoint magnetic moment vector
         yout = np.zeros(self.shape[1])
-        if self.optimization == 'numba':
+        if self.engine == 'numba':
             for RFSus in self.rmatvecList:
                 RFSus(xin, self.particle_positions, self.scan_positions,
                       yout, self.N_particles, self._N_cols)
