@@ -18,11 +18,11 @@ include = [
 
 [tool.poetry.build]
 generate-setup-file = false
-script = "build.py"
+script = "build_extension.py"
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
-numpy = "^1.21,<1.23"
+numpy = ">=1.23"
 scipy = "^1.7.0"
 matplotlib = "^3.2"
 numba = ">=0.56"
@@ -36,5 +36,5 @@ Shapely = "^1.8.4"
 jupytext = "^1.14.1"
 
 [build-system]
-requires = ["setuptools", "poetry-core>=1.1.14", "cython>0.29", "numpy<1.23"]
+requires = ["setuptools", "poetry-core>=1.1.14", "cython>0.29", "numpy>=1.23"]
 build-backend = "poetry.core.masonry.api"
