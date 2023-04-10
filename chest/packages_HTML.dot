@@ -1,5 +1,5 @@
 digraph "packages" {
-    node [shape=folder fontname=FiraMono]
+    node [shape=folder fontname=FiraMono fontsize="18pt"]
     mmt_minv [style=filled fillcolor=coral label=<
         <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0">
             <TR><TD><B>mmt_multipole_inversion</B></TD></TR>

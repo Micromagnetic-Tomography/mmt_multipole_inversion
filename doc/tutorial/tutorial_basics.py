@@ -343,7 +343,8 @@ ax.set_aspect('equal')
 # In this example, we can see that $Q_2=Q_{xy}$ has the highest magnitude among the quadrupoles, and the magnitude is around $10^{-18}$ (check units). The dipole moments should be around $\approx 10^{-12}$ if we had only a dipolar field.
 
 # %%
-qinv.inv_multipole_moments
+with np.printoptions(precision=2, suppress=False):
+    print(qinv.inv_multipole_moments)
 
 # %% [markdown]
 # And finally the difference between the measured field $B_z$ and the field from the inversion. The residual has an octupole character:
@@ -353,6 +354,23 @@ f, ax = plt.subplots()
 cf, c1 = minv.plot_tools.plot_difference_Bz(ax, qinv)
 colorbar(cf)
 ax.set_aspect('equal')
+
+# %% [markdown]
+# We can compare these results if we used the orthogonal basis given by spherical harmonics polynomials defined by  Burnham and English:
+
+# %%
+qinv = MultipoleInversion('./MetaDict_quadrupole_y-orientation.json',
+                          './MagneticSample_quadrupole_y-orientation.npz',
+                          expansion_limit='quadrupole',
+                          sus_functions_module='spherical_harmonics_basis')
+qinv.compute_inversion(method='sp_pinv2')
+
+# %%
+with np.printoptions(precision=2, suppress=False):
+    print(qinv.inv_multipole_moments)
+
+# %%
+print('Magnetization: ', np.linalg.norm(qinv.inv_multipole_moments[:3]) / 1e-18)
 
 # %% [markdown]
 # ### Quadrupole x-direction
