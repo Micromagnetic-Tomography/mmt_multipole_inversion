@@ -323,6 +323,7 @@ class MultipoleInversion(object):
     def compute_inversion(self,
                           method: _InvMethodOps = 'sp_pinv',
                           sigma_field_noise: Optional[float] = None,
+                          pyl_regs: list = None,
                           **method_kwargs
                           ):
         """
@@ -350,6 +351,9 @@ class MultipoleInversion(object):
             stored in the `inv_moments_std` 2D array where every row has the
             results per grain. For details, see
             [F. Out et al. Geochemistry, Geophysics, Geosystems 23(4). 2022]
+        pyl_regs
+            Required parameter for pylops solvers. Defaults to None.
+            Provides optional additional regularization parameters.
         **method_kwargs
             Extra parameters passed to Numpy or Scipy functions. For Numpy, the
             tolerance can be set using `rcond` while for `Scipy` it is
@@ -369,19 +373,19 @@ class MultipoleInversion(object):
                                 scan_positions, self.verbose)
             if self.verbose:
                 # self.inv_multipole_moments, info = pylinv(
-                #     Dlop, self.Bz_array.flatten(), None, show=True,
+                #     Dlop, self.Bz_array.flatten(), pyl_regs, show=True,
                 #     **method_kwargs)
                 (self.inv_multipole_moments, self.info1, self.info2,
                  self.info3, self.info4) = pylinv2(
-                    Dlop, self.Bz_array.flatten(), None, show=True,
+                    Dlop, self.Bz_array.flatten(), pyl_regs, show=True,
                     **method_kwargs)
 
             else:
                 # self.inv_multipole_moments, info = pylinv(
-                #     Dlop, self.Bz_array.flatten(), None, **method_kwargs)
+                #     Dlop, self.Bz_array.flatten(), pyl_regs, **method_kwargs)
                 (self.inv_multipole_moments, self.info1, self.info2,
                  self.info3, self.info4) = pylinv2(
-                    Dlop, self.Bz_array.flatten(), None, show=False,
+                    Dlop, self.Bz_array.flatten(), pyl_regs, show=False,
                     **method_kwargs)
             self.inv_multipole_moments.shape = (self.N_particles, self._N_cols)
             # if info != 0:
