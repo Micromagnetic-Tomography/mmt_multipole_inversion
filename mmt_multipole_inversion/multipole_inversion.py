@@ -372,24 +372,24 @@ class MultipoleInversion(object):
                                 self.particle_positions, self.expansion_limit,
                                 scan_positions, self.verbose)
             if self.verbose:
-                # self.inv_multipole_moments, info = pylinv(
-                #     Dlop, self.Bz_array.flatten(), pyl_regs, show=True,
-                #     **method_kwargs)
-                (self.inv_multipole_moments, self.info1, self.info2,
-                 self.info3, self.info4) = pylinv2(
+                self.inv_multipole_moments, info = pylinv(
                     Dlop, self.Bz_array.flatten(), pyl_regs, show=True,
                     **method_kwargs)
+                # (self.inv_multipole_moments, self.info1, self.info2,
+                #  self.info3, self.info4) = pylinv2(
+                #     Dlop, self.Bz_array.flatten(), pyl_regs, show=True,
+                #     **method_kwargs)
 
             else:
-                # self.inv_multipole_moments, info = pylinv(
-                #     Dlop, self.Bz_array.flatten(), pyl_regs, **method_kwargs)
-                (self.inv_multipole_moments, self.info1, self.info2,
-                 self.info3, self.info4) = pylinv2(
-                    Dlop, self.Bz_array.flatten(), pyl_regs, show=False,
-                    **method_kwargs)
+                self.inv_multipole_moments, info = pylinv(
+                    Dlop, self.Bz_array.flatten(), pyl_regs, **method_kwargs)
+            #     (self.inv_multipole_moments, self.info1, self.info2,
+            #      self.info3, self.info4) = pylinv2(
+            #         Dlop, self.Bz_array.flatten(), pyl_regs, show=False,
+            #         **method_kwargs)
             self.inv_multipole_moments.shape = (self.N_particles, self._N_cols)
-            # if info != 0:
-            #     raise Exception(f'Inversion failed, errorcode: {info}')
+            if info != 0:
+                raise Exception(f'Inversion failed, errorcode: {info}')
         else:
             if self.Q.size == 0:
                 if self.verbose:
