@@ -3,6 +3,11 @@ import mmt_multipole_inversion.magnetic_sample as msp
 import mmt_multipole_inversion.multipole_inversion as minv
 from pathlib import Path
 import pytest
+try:
+    from mmt_multipole_inversion.susceptibility_modules.cuda import cudalib as sus_cudalib
+    HASCUDA = True
+except ImportError:
+    HASCUDA = False
 
 LIMIT_params = ['dipole', 'quadrupole', 'octupole']
 
@@ -31,7 +36,7 @@ def fw_model_fun(sensor_dx=1e-6, sensor_dy=1e-6, overwrite=False,
 
     # Initialise the dipole class
     sample = msp.MagneticSample(Hz, Sx, Sy, Sdx, Sdy, Lx, Ly, Lz,
-                                scan_origin=(0e-6, 0e-6),
+                                sensor_origin=(0e-6, 0e-6),
                                 bz_field_module='spherical_harmonics_basis'
                                 )
 
@@ -91,6 +96,7 @@ def test_inversion_single_dipole_numba(limit):
         assert rel_diff < 1e-5
 
 
+@pytest.mark.skipif(not HASCUDA, reason="CUDA not found")
 @pytest.mark.parametrize("limit", LIMIT_params, ids=['dip', 'quad', 'oct'])
 def test_compare_cuda_numba_populate_array(limit):
     """
@@ -138,6 +144,7 @@ def test_compare_cuda_numba_populate_array(limit):
     # print(np.abs(Q_cuda - Q_numba)[idxs][:10])
 
 
+@pytest.mark.skipif(not HASCUDA, reason="CUDA not found")
 @pytest.mark.parametrize("limit", LIMIT_params, ids=['dip', 'quad', 'oct'])
 def test_inversion_single_dipole_cuda(limit):
 
@@ -171,6 +178,7 @@ def test_inversion_single_dipole_cuda(limit):
         assert rel_diff < 1e-6
 
 
+@pytest.mark.parametrize("limit", ['dipole', 'quadrupole'], ids=['dip', 'quad'])
 def test_inversion_single_dipole_numba_sensor_3D(limit):
 
     TEST_SAVEDIR = Path('TEST_TMP')
@@ -207,6 +215,7 @@ def test_inversion_single_dipole_numba_sensor_3D(limit):
         # assert rel_diff < 1e-5
 
 
+@pytest.mark.parametrize("limit", ['dipole', 'quadrupole'], ids=['dip', 'quad'])
 def test_inversion_single_dipole_numba_sensor_2D(limit):
 
     TEST_SAVEDIR = Path('TEST_TMP_2D')

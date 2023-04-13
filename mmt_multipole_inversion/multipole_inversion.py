@@ -148,28 +148,44 @@ class MultipoleInversion(object):
         with open(sample_config_file, 'r') as f:
             metadict = json.load(f)
 
-        # TODO: there is a more efficient way to generate the variables from
-        # the dictionary
-        self.Hz = metadict.get("Scan height Hz")
-        self.Sx = metadict.get("Scan area x-dimension Sx")
-        self.Sy = metadict.get("Scan area y-dimension Sy")
-        self.Sdx = metadict.get("Scan x-step Sdx")
-        self.Sdy = metadict.get("Scan y-step Sdy")
-        self.N_particles = metadict.get("Number of particles")
-        self.time_stamp = metadict.get("Time stamp")
+        # Set the following keys from the json file as class parameters with
+        # the 'value' as name, e.g. scan height is set in self.Hz
+        multInVDict = {"Scan height Hz": 'Hz',
+                       "Scan area x-dimension Sx": 'Sx',
+                       "Scan area y-dimension Sy": 'Sy',
+                       "Scan x-step Sdx": 'Sdx',
+                       "Scan y-step Sdy": 'Sdy',
+                       "Number of particles": 'N_particles',
+                       "Time stamp": 'time_stamp',
+                       # Set the variables sensor_origin_x / y  if
+                       # found in the json file dict, otherwise set them to 0.0
+                       "Sensor origin x": ('sensor_origin_x', 0.0),
+                       "Sensor origin y": ('sensor_origin_y', 0.0),
+                       # Sensor dimensions (empty tuple if not specified)
+                       "Sensor dimensions": ('sensor_dims', ()),
+                       }
 
-        # Set the variables scan_sensor_origin_x and scan_sensor_origin_y if
-        # found in the dictionary, otherwise set them to 0.0
-        self.scan_sensor_origin_x = metadict.get('Sensor origin x', 0.0)
-        self.scan_sensor_origin_y = metadict.get('Sensor origin y', 0.0)
+        for k, v in multInVDict.items():
+            if isinstance(v, tuple) :
+                setattr(self, v[0], metadict.get(k, v[1]))
+            else:
+                setattr(self, v, metadict.get(k))
+
+            if self.verbose:
+                if k not in metadict.keys():
+                    print(f'Parameter {k} not found in json file')
+                    if isinstance(v, tuple):
+                        print(f'Setting {k} value to {v[1]}')
+
+        for k in metadict.keys():
+            if self.verbose:
+                if k not in multInVDict.keys():
+                    print(f'Not using parameter {k} in json file')
 
         self.generate_measurement_mesh()
 
         # Instantiate the forward matrix
         self.Q = np.empty(0)
-
-        # Sensor dimensions (empty tuple if not specified)
-        self.sensor_dims = metadict.get("Sensor dimensions", ())
 
     @property
     def expansion_limit(self):
@@ -199,8 +215,8 @@ class MultipoleInversion(object):
         """
 
         # Generate measurement mesh
-        self.Sx_range = self.scan_sensor_origin_x + np.arange(round(self.Sx / self.Sdx)) * self.Sdx
-        self.Sy_range = self.scan_sensor_origin_y + np.arange(round(self.Sy / self.Sdy)) * self.Sdy
+        self.Sx_range = self.sensor_origin_x + np.arange(round(self.Sx / self.Sdx)) * self.Sdx
+        self.Sy_range = self.sensor_origin_y + np.arange(round(self.Sy / self.Sdy)) * self.Sdy
         self.Nx_surf = len(self.Sx_range)
         self.Ny_surf = len(self.Sy_range)
 
