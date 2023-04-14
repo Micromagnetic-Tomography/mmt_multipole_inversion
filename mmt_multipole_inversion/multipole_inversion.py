@@ -389,7 +389,7 @@ class MultipoleInversion(object):
             #         **method_kwargs)
             self.inv_multipole_moments.shape = (self.N_particles, self._N_cols)
             if info != 0:
-                raise Exception(f'Inversion failed, errorcode: {info}')
+                print(f'Inversion failed, errorcode: {info}')
         else:
             if self.Q.size == 0:
                 if self.verbose:
