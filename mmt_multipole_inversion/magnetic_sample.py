@@ -112,7 +112,7 @@ class MagneticSample(object):
         Parameters
         ----------
         Hz
-            Scan height in m
+            List of scan height in metres
         Sx, Sy
             Scan area x and y - dimension in m
         Sdx, Sdy
@@ -302,36 +302,39 @@ class MagneticSample(object):
         # Generate measurement mesh (maybe replace 0.0 by a shifted origin)
         self.Sx_range = self.sensor_origin_x + np.arange(round(self.Sx / self.Sdx)) * self.Sdx
         self.Sy_range = self.sensor_origin_y + np.arange(round(self.Sy / self.Sdy)) * self.Sdy
-        Bz_grid = np.zeros((len(self.Sy_range), len(self.Sx_range)))
+        self.Bz_array = np.zeros((len(self.Hz),
+                                  len(self.Sy_range),
+                                  len(self.Sx_range)))
+        for i in range(len(self.Hz)):
+            Bz_grid = np.zeros((len(self.Sy_range), len(self.Sx_range)))
+            pos = np.ones((Bz_grid.shape[0] * Bz_grid.shape[1], 3))
+            X_pos, Y_pos = np.meshgrid(self.Sx_range, self.Sy_range)
+            pos[:, :2] = np.stack((X_pos, Y_pos), axis=2).reshape(-1, 2)
+            pos[:, 2] *= self.Hz
+            pos.shape = (len(self.Sy_range), len(self.Sx_range), 3)
 
-        pos = np.ones((Bz_grid.shape[0] * Bz_grid.shape[1], 3))
-        X_pos, Y_pos = np.meshgrid(self.Sx_range, self.Sy_range)
-        pos[:, :2] = np.stack((X_pos, Y_pos), axis=2).reshape(-1, 2)
-        pos[:, 2] *= self.Hz
-        pos.shape = (len(self.Sy_range), len(self.Sx_range), 3)
+            self.bz_field_mod.dipole_Bz(self.dipole_positions, self.dipole_moments,
+                                        pos, Bz_grid, self.Sx_range, self.Sy_range)
 
-        self.bz_field_mod.dipole_Bz(self.dipole_positions, self.dipole_moments,
-                                    pos, Bz_grid, self.Sx_range, self.Sy_range)
+            if isinstance(self.quadrupole_moments, np.ndarray):
+                self.bz_field_mod.quadrupole_Bz(self.dipole_positions,
+                                                self.quadrupole_moments,
+                                                pos, Bz_grid,
+                                                self.Sx_range, self.Sy_range)
 
-        if isinstance(self.quadrupole_moments, np.ndarray):
-            self.bz_field_mod.quadrupole_Bz(self.dipole_positions,
-                                            self.quadrupole_moments,
-                                            pos, Bz_grid,
-                                            self.Sx_range, self.Sy_range)
+            if isinstance(self.octupole_moments, np.ndarray):
+                self.bz_field_mod.octupole_Bz(self.dipole_positions,
+                                              self.octupole_moments,
+                                              pos, Bz_grid,
+                                              self.Sx_range, self.Sy_range)
 
-        if isinstance(self.octupole_moments, np.ndarray):
-            self.bz_field_mod.octupole_Bz(self.dipole_positions,
-                                          self.octupole_moments,
-                                          pos, Bz_grid,
-                                          self.Sx_range, self.Sy_range)
-
-        self.Bz_array = Bz_grid
+            self.Bz_array[i] = Bz_grid
 
     def generate_noised_Bz_array(self, std_dev, seed=4242):
         """
         Add uncorrelated noise to the magnetic flux (Bz array). The new
         array is stored in self.Bz_array_noised
-        Update the seed if necessar.
+        Update the seed if necessary.
         For the seed a random number generator can be passed instead of an int.
         """
         if type(seed) == np.random.mtrand.RandomState:
@@ -373,7 +376,7 @@ class MagneticSample(object):
 
         # Save uncompressed file
         np.savez(save_fname,
-                 Bz_array=Bz_data,
+                 Bz_matrix=Bz_data,
                  particle_positions=self.dipole_positions,
                  dipole_moments=self.dipole_moments,
                  volumes=self.volumes)

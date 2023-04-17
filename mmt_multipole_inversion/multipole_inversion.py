@@ -166,7 +166,6 @@ class MultipoleInversion(object):
                        "Sensor origin y": ('sensor_origin_y', 0.0),
                        # Sensor dimensions (empty tuple if not specified)
                        "Sensor dimensions": ('sensor_dims', ()),
-                       "Measurement planes": ('meas_planes', 1),
                        }
 
         for k, v in multInVDict.items():
@@ -265,7 +264,7 @@ class MultipoleInversion(object):
 
         # Create all the positions of the scan grid
         sensors_old = 0
-        for i in range(self.meas_planes):
+        for i in range(len(self.Hz)):
             sensors_plane = self.Nx_surf * self.Ny_surf
             scan_positions = np.ones((sensors_plane, 3))
             X_pos, Y_pos = np.meshgrid(self.Sx_range, self.Sy_range)
@@ -406,7 +405,7 @@ class MultipoleInversion(object):
         # Forward field
         self.inv_Bz_array = np.matmul(self.Q,
                                       self.inv_multipole_moments.reshape(-1))
-        self.inv_Bz_array.shape = (self.meas_planes, self.Ny_surf, self.Nx_surf)
+        self.inv_Bz_array.shape = (len(self.Hz), self.Ny_surf, self.Nx_surf)
 
         # Generate covariance matrix if sigma not none
         if isinstance(sigma_field_noise, float):
