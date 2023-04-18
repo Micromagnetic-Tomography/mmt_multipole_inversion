@@ -26,6 +26,7 @@ def get_inversion_plot_objects(inv):
 
 def plot_sample(ax,
                 MultInvInst,
+                plot_height=0,
                 contourf_args={'levels': 50},
                 contour_args={},
                 scatter_args={'c': 'k', 's': 1},
@@ -42,6 +43,8 @@ def plot_sample(ax,
         An instance of the `MultipoleInversion` class. This function uses the
         attributes `Bz_array` `Sx_range`, `Sy_range`, `Sdx`, `Sdy` and
         `particle_positions`.
+    plot_height
+        determines which field to plot, default to 0.
     contourf_args,
         Plots Bz using a colormap and filled contour levels. This options is
         a `dict` passed to the corresponding matplotlib function.
@@ -71,11 +74,11 @@ def plot_sample(ax,
     cf, sc, contours = None, None, None
 
     if not imshow_args:
-        cf = ax.contourf(mi.Sx_range * dms, mi.Sy_range * dms, mi.Bz_array * dds,
-                         **contourf_args)
+        cf = ax.contourf(mi.Sx_range * dms, mi.Sy_range * dms,
+                         mi.Bz_matrix[plot_height] * dds, **contourf_args)
     else:
         dx, dy = mi.Sdx * dms * 0.5, mi.Sdy * dms * 0.5
-        cf = ax.imshow(mi.Bz_array * dds,
+        cf = ax.imshow(mi.Bz_matrix[plot_height] * dds,
                        origin='lower',
                        extent=[mi.Sx_range.min() * dms - dx,
                                mi.Sx_range.max() * dms + dx,
@@ -85,7 +88,7 @@ def plot_sample(ax,
 
     if contour_args:
         contours = ax.contour(mi.Sx_range * dms, mi.Sy_range * dms,
-                              mi.Bz_array * dds,
+                              mi.Bz_matrix[plot_height] * dds,
                               **contour_args)
 
     if scatter_args:
@@ -98,6 +101,7 @@ def plot_sample(ax,
 
 def plot_inversion_Bz(ax,
                       MultInvInst,
+                      plot_height=0,
                       contourf_args={'cmap': 'RdYlBu', 'levels': 10},
                       contour_args={'colors': 'k', 'linewidths': .2, 'levels': 10},
                       scatter_args={'c': 'k'},
@@ -114,6 +118,8 @@ def plot_inversion_Bz(ax,
         An instance of the `MultipoleInversion` class. This function uses the
         attributes `inv_Bz_array`, `Sx_range`, `Sy_range`, `Sdx`, `Sdy` and
         `particle_positions`.
+    plot_height
+        determines which field to plot, default to 0.
     contourf_args,
         Plots Bz using a colormap and filled contour levels. This options is
         a `dict` passed to the corresponding matplotlib function.
@@ -146,10 +152,10 @@ def plot_inversion_Bz(ax,
     # plt.colorbar()
     if not imshow_args:
         cf = ax.contourf(mi.Sx_range * dms, mi.Sy_range * dms,
-                         mi.inv_Bz_array * dds, **contourf_args)
+                         mi.inv_Bz_matrix[plot_height] * dds, **contourf_args)
     else:
         dx, dy = 0.5 * mi.Sdx * dms, 0.5 * mi.Sdy * dms
-        cf = ax.imshow(mi.inv_Bz_array * dds,
+        cf = ax.imshow(mi.inv_Bz_matrix[plot_height] * dds,
                        origin='lower',
                        extent=[mi.Sx_range.min() * dms - dx,
                                mi.Sx_range.max() * dms + dx,
@@ -158,7 +164,7 @@ def plot_inversion_Bz(ax,
                        **imshow_args)
 
     c1 = ax.contour(mi.Sx_range * dms, mi.Sy_range * dms,
-                    mi.inv_Bz_array * dds, **contour_args)
+                    mi.inv_Bz_matrix[plot_height] * dds, **contour_args)
 
     if scatter_args:
         c2 = ax.scatter(mi.particle_positions[:, 0] * dms,
@@ -172,6 +178,7 @@ def plot_inversion_Bz(ax,
 
 def plot_difference_Bz(ax,
                        MultInvInst,
+                       plot_height=0,
                        contourf_args={'cmap': 'RdYlBu', 'levels': 50},
                        scatter_args={'c': 'k', 's': 1},
                        imshow_args=None,
@@ -187,6 +194,8 @@ def plot_difference_Bz(ax,
         An instance of the `MultipoleInversion` class. This function uses the
         attributes `Bz_array`, `inv_Bz_array`, `Sx_range`, `Sy_range`, `Sdx`,
         `Sdy` and `particle_positions`.
+    plot_height
+        determines which field to plot, default to 0.
     contourf_args,
         Plots Bz using a colormap and filled contour levels. This options is\
         a `dict` passed to the corresponding matplotlib function.
@@ -218,11 +227,13 @@ def plot_difference_Bz(ax,
     # plt.imshow((computed_FF - Bz_Data).reshape(100, 101))
     if not imshow_args:
         cf = ax.contourf(mi.Sx_range * dms, mi.Sy_range * dms,
-                         (mi.inv_Bz_array - mi.Bz_array) * dds,
+                         (mi.inv_Bz_matrix[plot_height]
+                          - mi.Bz_matrix[plot_height]) * dds,
                          **contourf_args)
     else:
         dx, dy = 0.5 * mi.Sdx * dms, 0.5 * mi.Sdy * dms
-        cf = ax.imshow((mi.inv_Bz_array - mi.Bz_array) * dds,
+        cf = ax.imshow((mi.inv_Bz_matrix[plot_height]
+                        - mi.Bz_matrix[plot_height]) * dds,
                        origin='lower',
                        extent=[mi.Sx_range.min() * dms - dx,
                                mi.Sx_range.max() * dms + dx,

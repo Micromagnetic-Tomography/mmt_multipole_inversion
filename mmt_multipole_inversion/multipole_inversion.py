@@ -279,7 +279,7 @@ class MultipoleInversion(object):
 
                     sus_cudalib.SHB_populate_matrix(self.particle_positions,
                                                     scan_positions,
-                                                    self.Q[sensors_old:sensors_plane, :],
+                                                    self.Q[sensors_old:sensors_old+sensors_plane, :],
                                                     self.N_particles, sensors_plane,
                                                     mp_order[self.expansion_limit],
                                                     self.verbose)
@@ -291,15 +291,15 @@ class MultipoleInversion(object):
             elif optimization == 'numba':
                 if len(self.sensor_dims) == 0:
                     self.sus_mod.dipole_Bz_sus(self.particle_positions, scan_positions,
-                                               self.Q[sensors_old:sensors_plane, :], self._N_cols)
+                                               self.Q[sensors_old:sensors_old+sensors_plane, :], self._N_cols)
                     if self.expansion_limit in ['quadrupole', 'octupole']:
                         self.sus_mod.quadrupole_Bz_sus(self.particle_positions,
                                                        scan_positions,
-                                                       self.Q[sensors_old:sensors_plane, :], self._N_cols)
+                                                       self.Q[sensors_old:sensors_old+sensors_plane, :], self._N_cols)
                     if self.expansion_limit in ['octupole']:
                         self.sus_mod.octupole_Bz_sus(self.particle_positions,
                                                      scan_positions,
-                                                     self.Q[sensors_old:sensors_plane, :], self._N_cols)
+                                                     self.Q[sensors_old:sensors_old+sensors_plane, :], self._N_cols)
 
                 # AREA SENSOR
                 elif len(self.sensor_dims) == 2:
@@ -307,13 +307,13 @@ class MultipoleInversion(object):
                         self.Q = np.empty(0)
                         raise ValueError('Octupole expansion_limit for area sensors not implemented')
                     self.sus_mod.multipole_Bz_sus(self.particle_positions, scan_positions,
-                                                  self.Q[sensors_old:sensors_plane, :], self._N_cols,
+                                                  self.Q[sensors_old:sensors_old+sensors_plane, :], self._N_cols,
                                                   *self.sensor_dims,
                                                   mp_order[self.expansion_limit]
                                                   )
                     aream = 1 / (4 * self.sensor_dims[0] * self.sensor_dims[1])
                     # Convert area flux to average flux per sensor
-                    np.multiply(self.Q[sensors_old:sensors_plane, :], aream, out=self.Q[sensors_old:sensors_plane, :])
+                    np.multiply(self.Q[sensors_old:sensors_old+sensors_plane, :], aream, out=self.Q[sensors_old:sensors_old+sensors_plane, :])
 
                 # VOLUME SENSOR
                 elif len(self.sensor_dims) == 3:
@@ -332,7 +332,7 @@ class MultipoleInversion(object):
                     raise ValueError('Wrong sensor dimensions')
             else:
                 raise ValueError(f'Optimization {optimization} not valid')
-            sensors_old = sensors_plane
+            sensors_old += sensors_plane
 
         t1 = time.time()
         if self.verbose:
@@ -395,7 +395,12 @@ class MultipoleInversion(object):
             raise ValueError(f'Method {method} not implemented')
 
         # print('Bz_data shape OLD:', Bz_array.shape)
-        Bz_Data = np.reshape(self.Bz_matrix, self.N_sensors, order='C')
+        #TODO: make it better!
+        Bz_Data = np.zeros(self.N_sensors)
+        for i in range(len(self.Hz)):
+            Bz_Data[i*self.Nx_surf*self.Ny_surf:
+                    (i+1)*self.Nx_surf*self.Ny_surf] = np.reshape(self.Bz_matrix[i], self.Nx_surf * self.Ny_surf, order='C')
+
         # print('Bz_data shape:', Bz_Data.shape)
         # print('IQ shape:', IQ.shape)
         self.inv_multipole_moments = np.dot(self.IQ, Bz_Data)
@@ -403,9 +408,9 @@ class MultipoleInversion(object):
         # print('mags:', mags.shape)
 
         # Forward field
-        self.inv_Bz_array = np.matmul(self.Q,
-                                      self.inv_multipole_moments.reshape(-1))
-        self.inv_Bz_array.shape = (len(self.Hz), self.Ny_surf, self.Nx_surf)
+        self.inv_Bz_matrix = np.matmul(self.Q,
+                                       self.inv_multipole_moments.reshape(-1))
+        self.inv_Bz_matrix.shape = (len(self.Hz), self.Ny_surf, self.Nx_surf)
 
         # Generate covariance matrix if sigma not none
         if isinstance(sigma_field_noise, float):

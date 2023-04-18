@@ -154,7 +154,7 @@ class MagneticSample(object):
         # Set dictionary entries with values as corresponding class attrs
         # A metadict can be generated using the self.get_metadict() method
         self._metadict = {}
-        self._metadict["Scan height Hz"] = 'Hz'
+        self._metadict["Scan heights Hz"] = 'Hz'
         self._metadict["Scan area x-dimension Sx"] = 'Sx'
         self._metadict["Scan area y-dimension Sy"] = 'Sy'
         self._metadict["Scan x-step Sdx"] = 'Sdx'
@@ -203,7 +203,7 @@ class MagneticSample(object):
         N_particles
             Number of particles
         Ms
-            Saturation magnetisation
+            Saturation magnetization
         seed
             random number generator seed
         rmin, rmax
@@ -310,7 +310,7 @@ class MagneticSample(object):
             pos = np.ones((Bz_grid.shape[0] * Bz_grid.shape[1], 3))
             X_pos, Y_pos = np.meshgrid(self.Sx_range, self.Sy_range)
             pos[:, :2] = np.stack((X_pos, Y_pos), axis=2).reshape(-1, 2)
-            pos[:, 2] *= self.Hz
+            pos[:, 2] *= self.Hz[i]
             pos.shape = (len(self.Sy_range), len(self.Sx_range), 3)
 
             self.bz_field_mod.dipole_Bz(self.dipole_positions, self.dipole_moments,
@@ -395,6 +395,7 @@ class MagneticSample(object):
             json.dump(metadict, f)
 
     def plot_sample(self, ax,
+                    plot_height=0,
                     contours=30,
                     contourlines=15,
                     contourf_args=dict(cmap='RdYlBu'),
@@ -421,9 +422,9 @@ class MagneticSample(object):
         """
 
         if noised_array:
-            Bz_data = self.Bz_array_noised
+            Bz_data = self.Bz_array_noised[plot_height]
         else:
-            Bz_data = self.Bz_array
+            Bz_data = self.Bz_array[plot_height]
 
         dms = dimension_scale
         dds = data_scale
@@ -445,7 +446,7 @@ class MagneticSample(object):
 
         # Use the contours of the original unperturbed array
         c1 = ax.contour(self.Sx_range * dms, self.Sy_range * dms,
-                        self.Bz_array * dds,
+                        self.Bz_array[plot_height] * dds,
                         contourlines,
                         **contour_args)
         c2 = ax.scatter(self.dipole_positions[:, 0] * dms,
