@@ -76,7 +76,9 @@ class MultipoleInversion(object):
                 Sensor dimensions
             Sensor dimensions are required if a 2D or 3D sensor is used. The
             sensor origins are the coordinates of the lower left sensor center,
-            in the scanning surface. By default it is `(0.0, 0.0)`.
+            in the scanning surface. By default it is `(0.0, 0.0)`. The sensor
+            grid in each dimension (`x` or `y`) is computed as multiples of
+            `Scan area / Scan step`
         sample_arrays
             An `npz` file containing the scan signal Bz and the particle
             positions (magnetic sources). The file can contain other
