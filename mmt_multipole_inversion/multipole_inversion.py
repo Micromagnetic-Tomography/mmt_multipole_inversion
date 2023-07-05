@@ -28,7 +28,7 @@ from . import plot_tools as pt
 
 # Import pylops and linearoperator
 import pylops
-pylinv = pylops.optimization.leastsquares.normal_equations_inversion
+# pylinv = pylops.optimization.leastsquares.normal_equations_inversion
 pylinv2 = pylops.optimization.leastsquares.regularized_inversion
 from .susceptibility_modules.pylops.pylopsclass import GreensMatrix
 # -----------------------------------------------------------------------------
@@ -372,17 +372,17 @@ class MultipoleInversion(object):
                                 self.particle_positions, self.expansion_limit,
                                 scan_positions, self.verbose)
 
-            self.inv_multipole_moments, info = pylinv(
-                Dlop, self.Bz_array.flatten(), pyl_regs, show=self.verbose,
-                **method_kwargs)
-            # (self.inv_multipole_moments, self.info1, self.info2,
-            #  self.info3, self.info4) = pylinv2(
-            #     Dlop, self.Bz_array.flatten(), pyl_regs,
-            #     show=self.verbose, **method_kwargs)
+            # self.inv_multipole_moments, info = pylinv(
+            #     Dlop, self.Bz_array.flatten(), pyl_regs, show=self.verbose,
+            #     **method_kwargs)
+            (self.inv_multipole_moments, self.info1, self.info2,
+             self.info3, self.info4) = pylinv2(
+                Dlop, self.Bz_array.flatten(), pyl_regs,
+                show=self.verbose, **method_kwargs)
 
             self.inv_multipole_moments.shape = (self.N_particles, self._N_cols)
-            if info != 0:
-                print(f'Inversion failed, errorcode: {info}')
+            # if info != 0:
+            #     print(f'Inversion failed, errorcode: {info}')
         else:
             if self.Q.size == 0:
                 if self.verbose:
