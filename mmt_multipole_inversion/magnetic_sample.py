@@ -257,7 +257,8 @@ class MagneticSample(object):
                                       dipole_moments,
                                       volumes,
                                       quadrupole_moments=None,
-                                      octupole_moments=None
+                                      octupole_moments=None,
+                                      identifier=None,
                                       ):
         """
         Generate particles in the sample from arrays specified manually
@@ -274,6 +275,8 @@ class MagneticSample(object):
             N x 5 array with quadrupole moments
         octupole_moments
             N x 7 array with octupole moments
+        identifier
+            N array with integers representing particles
 
         Notes
         -----
@@ -290,6 +293,11 @@ class MagneticSample(object):
         self.volumes = volumes
 
         self.N_particles = len(positions)
+        # identifying particles to compare results
+        if isinstance(identifier, np.ndarray):
+            self.identifier = identifier
+        else:
+            self.identifier = np.arange(1, len(positions) + 1)
 
     def generate_measurement_mesh(self):
         """
@@ -344,7 +352,8 @@ class MagneticSample(object):
     def save_data(self, filename='TIME_STAMP', basedir='', noised_array=False):
         """
         Save the system properties as a `json` file and relevant arrays in a
-        `npz` file: Bz_array, particle_positions, magnetization and volumes.
+        `npz` file: Bz_array, particle_positions, magnetization, volumes,
+        and identifiers.
 
         Parameters
         ----------
@@ -376,7 +385,8 @@ class MagneticSample(object):
                  Bz_array=Bz_data,
                  particle_positions=self.dipole_positions,
                  dipole_moments=self.dipole_moments,
-                 volumes=self.volumes)
+                 volumes=self.volumes,
+                 identifier=self.identifier)
 
         # # Will leave this but if we only use Python this should be deprecated:
         # np.savetxt("Bz_array" + st, self.Bz_array, delimiter=", ", fmt='%.8e')

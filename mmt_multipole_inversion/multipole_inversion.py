@@ -168,7 +168,7 @@ class MultipoleInversion(object):
                        }
 
         for k, v in multInVDict.items():
-            if isinstance(v, tuple) :
+            if isinstance(v, tuple):
                 setattr(self, v[0], metadict.get(k, v[1]))
             else:
                 setattr(self, v, metadict.get(k))
@@ -412,6 +412,7 @@ class MultipoleInversion(object):
     def save_multipole_moments(self,
                                save_name: str = 'TIME_STAMP',
                                basedir: Union[Path, str] = '.',
+                               save_identifier: bool = False,
                                save_moments_std: bool = False) -> None:
         """Save the multipole values in `npz` files.
 
@@ -424,6 +425,8 @@ class MultipoleInversion(object):
         basedir
             Base directory where results are saved. Will be created if it
             does not exist
+        save_identifier
+            Add a set identifier to the magnetic moments
         save_moments_std
             Add the standard deviation of the magnetic moments to the `npz`
             file in case the `sigma_field_noise` was specified in the inversion
@@ -437,6 +440,8 @@ class MultipoleInversion(object):
             fname = BASEDIR / f'InvMagQuad_{save_name}.npz'
 
         data_dict = dict(inv_multipole_moments=self.inv_multipole_moments)
+        if save_identifier and hasattr(self, 'identifier'):
+            data_dict['identifier'] = self.identifier
         if save_moments_std:
             data_dict['moments_std'] = self.inv_moments_std
 
