@@ -60,8 +60,15 @@ This library contains an optional Nvidia CUDA library to populate the forward
 matrix in the `multipole_inversion` code. To build this library you need to set
 the `CUDAHOME` or `CUDA_PATH` environment variables to the location of CUDA in
 your system. Alternatively, the `nvcc` compiler path can be set in the `PATH`
-variable. The it is only necessary to install or build the library using
+variable. This is only necessary to install or build the library using
 `poetry install` or `poetry build`.
+
+The compilation of the CUDA extension is currently setup for a Turing card
+with computing capability 7.5. If using an older or newer card, you can
+modify the `-arch=sm_XX` option in the `build_extension.py` script. Links to
+check Nvidia cards architectures and capabilities are commented in this file.
+Additionally, if `nvcc` complains about the `gcc` compiler version, you can
+set a specific `gcc` using the `-ccbin=` flag (see the build script).
 
 # Tutorial
 

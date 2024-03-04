@@ -31,7 +31,6 @@
 # Copyright (c) 2022, David Cortés-Ortuño and the Authors
 # -----------------------------------------------------------------------------
 
-import setuptools
 from setuptools.extension import Extension
 from setuptools.dist import Distribution
 # setuptools contains the correct self.build_extensions function when
@@ -43,7 +42,6 @@ from Cython.Build import cythonize
 import numpy
 import os
 from os.path import join as pjoin
-from pathlib import Path
 
 
 # -----------------------------------------------------------------------------
@@ -187,8 +185,13 @@ if CUDA:
     # See: https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
     # FMAD (floating-point multiply-add): turning off helps for numerical precission (useful
     #                                     for graphics) but this might slightly affect performance
+    # For other architectures: see https://en.wikipedia.org/wiki/CUDA
+    #   For instance, a GTX 750 Ti has compute capability 5.0 so we use sm_50
+    # If CUDA complains about gcc version being too new, specify an older version using the ccbin flag
     com_args['nvcc'] = ['-arch=sm_75', '--fmad=false', '--ptxas-options=-v',
-                        '-c', '--compiler-options', "'-fPIC'"]
+                        '-c', '--compiler-options', "'-fPIC'", 
+                        # '-ccbin=/usr/bin/gcc-12'
+                        ]
     extensions.append(
         Extension("mmt_multipole_inversion.susceptibility_modules.cuda.cudalib",
                   sources=["mmt_multipole_inversion/susceptibility_modules/cuda/cudalib.pyx",
