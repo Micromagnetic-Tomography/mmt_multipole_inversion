@@ -356,7 +356,7 @@ class MultipoleInversion(object):
                 sp_pinv2 -> Scipy's pinv2 (this will call sp_pinv instead)
         mask
             True/False masking array for the magnetic field. Values labeled
-            True are ignored.
+            True are ignored. Should have length equal to # of observations
         sigma_field_noise
             If a `float` is specified, a covariance matrix is produced and
             stored in the `covariance_matrix` variable. This matrix uses
@@ -379,6 +379,8 @@ class MultipoleInversion(object):
 
         idx = np.arange(len(self.Q))
         if mask is not None:
+            assert len(mask) == len(self.Q), ('mask has incorrect length, '
+                                              f'should be: {len(self.Q)}')
             idx = np.where(mask == 0)[0]
 
         if method == 'np_pinv':
