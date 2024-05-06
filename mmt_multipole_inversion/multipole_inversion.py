@@ -335,6 +335,7 @@ class MultipoleInversion(object):
 
     def compute_inversion(self,
                           method: _InvMethodOps = 'sp_pinv',
+                          mask: np.array = None,
                           sigma_field_noise: Optional[float] = None,
                           **method_kwargs
                           ):
@@ -353,6 +354,9 @@ class MultipoleInversion(object):
                 np_pinv  -> Numpy's pinv
                 sp_pinv  -> Scipy's pinv (not recommended -> memory issues)
                 sp_pinv2 -> Scipy's pinv2 (this will call sp_pinv instead)
+        mask
+            Masking array for the magnetic field. Values labeled True are
+            ignored.
         sigma_field_noise
             If a `float` is specified, a covariance matrix is produced and
             stored in the `covariance_matrix` variable. This matrix uses
@@ -373,14 +377,18 @@ class MultipoleInversion(object):
                 print('Generating forward matrix')
             self.generate_forward_matrix()
 
+        idx = np.arange(len(self.Q))
+        if mask is not None:
+            idx = np.nonzero(~mask)
+
         if method == 'np_pinv':
             if self.verbose:
                 print('Using numpy.pinv for inversion')
-            self.IQ = np.linalg.pinv(self.Q, **method_kwargs)
+            self.IQ = np.linalg.pinv(self.Q[idx], **method_kwargs)
         elif method == 'sp_pinv' or method == 'sp_pinv2':
             if self.verbose:
                 print('Using scipy.linalg.pinv for inversion')
-            self.IQ = slin.pinv(self.Q, **method_kwargs)
+            self.IQ = slin.pinv(self.Q[idx], **method_kwargs)
         # elif method == 'tf_pinv':
         #     if self.verbose:
         #         print('Using tf.linalg.pinv for inversion')
@@ -392,7 +400,7 @@ class MultipoleInversion(object):
         Bz_Data = np.reshape(self.Bz_array, self.N_sensors, order='C')
         # print('Bz_data shape:', Bz_Data.shape)
         # print('IQ shape:', IQ.shape)
-        self.inv_multipole_moments = np.dot(self.IQ, Bz_Data)
+        self.inv_multipole_moments = np.dot(self.IQ, Bz_Data[idx])
         self.inv_multipole_moments.shape = (self.N_particles, self._N_cols)
         # print('mags:', mags.shape)
 
