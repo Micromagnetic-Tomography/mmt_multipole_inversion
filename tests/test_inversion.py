@@ -171,6 +171,7 @@ def test_inversion_single_dipole_cuda(limit):
         assert rel_diff < 1e-6
 
 
+@pytest.mark.parametrize("limit", LIMIT_params, ids=['dip', 'quad', 'oct'])
 def test_inversion_single_dipole_numba_sensor_3D(limit):
 
     TEST_SAVEDIR = Path('TEST_TMP')
@@ -207,6 +208,7 @@ def test_inversion_single_dipole_numba_sensor_3D(limit):
         # assert rel_diff < 1e-5
 
 
+@pytest.mark.parametrize("limit", LIMIT_params, ids=['dip', 'quad', 'oct'])
 def test_inversion_single_dipole_numba_sensor_2D(limit):
 
     TEST_SAVEDIR = Path('TEST_TMP_2D')

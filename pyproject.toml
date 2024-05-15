@@ -21,13 +21,14 @@ generate-setup-file = false
 script = "build.py"
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.11"
-numpy = "^1.21,<1.23"
+python = ">=3.9,<3.12"
+numpy = ">=1.25"
 scipy = "^1.7.0"
 matplotlib = "^3.2"
 numba = ">=0.56"
 Cython = "^0.29.30"
 pylops = ">=2.0.0"
+pytorch-minimize = ">=0.0.2"
 
 [tool.poetry.group.dev.dependencies]
 jupyter = "^1.0.0"

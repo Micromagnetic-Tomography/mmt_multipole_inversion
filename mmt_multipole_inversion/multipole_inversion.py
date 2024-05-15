@@ -31,6 +31,10 @@ import pylops
 # pylinv = pylops.optimization.leastsquares.normal_equations_inversion
 pylinv2 = pylops.optimization.leastsquares.regularized_inversion
 from .susceptibility_modules.pylops.pylopsclass import GreensMatrix
+
+import torchmin as tmin
+from .susceptibility_modules.torchm.torch_functions import Bflux_residual_f
+
 # -----------------------------------------------------------------------------
 
 _SusOptions = Literal['spherical_harmonics_basis',
@@ -383,6 +387,19 @@ class MultipoleInversion(object):
             self.inv_multipole_moments.shape = (self.N_particles, self._N_cols)
             # if info != 0:
             #     print(f'Inversion failed, errorcode: {info}')
+        elif method == 'torchmin':
+            scan_positions = np.ones((self.N_sensors, 3))
+            X_pos, Y_pos = np.meshgrid(self.Sx_range, self.Sy_range)
+            scan_positions[:, :2] = np.stack((X_pos, Y_pos), axis=2).reshape(-1, 2)
+            scan_positions[:, 2] *= self.Hz
+            if self.verbose:
+                print('Using the pytorch minimize lib for an iterative inversion')
+
+            minF = lambda x: Bflux_residual_f(x, self.Bz_array, self.N_sensors, self._N_cols, self.N_particles, self.particle_positions,
+                                              self.expansion_limit, scan_positions, engine='numba')
+            x0 = 1e-12 * np.ones(self.N_particles * self._N_cols)
+            tmin.minimize(minF, x0, method='bfgs')
+
         else:
             if self.Q.size == 0:
                 if self.verbose:
