@@ -32,6 +32,7 @@ import pylops
 pylinv2 = pylops.optimization.leastsquares.regularized_inversion
 from .susceptibility_modules.pylops.pylopsclass import GreensMatrix
 
+import torch
 import torchmin as tmin
 from .susceptibility_modules.torchm.torch_functions import Bflux_residual_f
 
@@ -395,10 +396,15 @@ class MultipoleInversion(object):
             if self.verbose:
                 print('Using the pytorch minimize lib for an iterative inversion')
 
-            minF = lambda x: Bflux_residual_f(x, self.Bz_array, self.N_sensors, self._N_cols, self.N_particles, self.particle_positions,
-                                              self.expansion_limit, scan_positions, engine='numba')
+            tBz = torch.from_numpy(self.Bz_array)
+            print(self.Bz_array.shape)
+            tParticlePositions = torch.from_numpy(self.particle_positions)
+            tScanPositions = torch.from_numpy(scan_positions)
+            minF = lambda x: Bflux_residual_f(x, tBz.flatten(), self.N_sensors, self._N_cols, self.N_particles, tParticlePositions,
+                                              self.expansion_limit, tScanPositions, engine='numba')
             x0 = 1e-12 * np.ones(self.N_particles * self._N_cols)
-            tmin.minimize(minF, x0, method='bfgs')
+            xf = tmin.minimize(minF, x0, method='bfgs')
+            print(xf)
 
         else:
             if self.Q.size == 0:
