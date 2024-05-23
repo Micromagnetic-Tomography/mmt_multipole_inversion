@@ -403,8 +403,12 @@ class MultipoleInversion(object):
             minF = lambda x: Bflux_residual_f(x, tBz.flatten(), self.N_sensors, self._N_cols, self.N_particles, tParticlePositions,
                                               self.expansion_limit, tScanPositions, engine='numba')
             x0 = 1e-12 * np.ones(self.N_particles * self._N_cols)
-            xf = tmin.minimize(minF, x0, method='bfgs')
-            print(xf)
+            # minResult = tmin.minimize(minF, x0, options=dict(xtol=1e-30, gtol=1e-25, line_search='strong-wolfe', disp=2), method='bfgs', disp=2)
+            minResult = tmin.minimize(minF, x0, options=dict(lr=1e-5, xtol=1e-30, gtol=1e-25, line_search='strong-wolfe', disp=2), method='l-bfgs', disp=2)
+            # minResult = tmin.minimize(minF, x0, options=dict(gtol=1e-25, disp=2), method='cg', disp=2)
+
+            self.inv_multipole_moments = minResult.x.numpy()
+            self.inv_multipole_moments.shape = (self.N_particles, self._N_cols)
 
         else:
             if self.Q.size == 0:

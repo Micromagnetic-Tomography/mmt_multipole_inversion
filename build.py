@@ -187,7 +187,7 @@ if CUDA:
     # See: https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/
     # FMAD (floating-point multiply-add): turning off helps for numerical precission (useful
     #                                     for graphics) but this might slightly affect performance
-    com_args['nvcc'] = ['-arch=sm_75', '--fmad=false', '--ptxas-options=-v',
+    com_args['nvcc'] = ['-arch=sm_50', '--fmad=false', '--ptxas-options=-v',
                         '-c', '--compiler-options', "'-fPIC'"]
     extensions.append(
         Extension("mmt_multipole_inversion.susceptibility_modules.cuda.cudalib",
