@@ -20,8 +20,7 @@ def dipole_Bz_sus(xin, N_sensors, N_particles, dip_r, pos_r, yout, n_col_stride)
     return None
 
 
-def quadrupole_Bz_sus(xin, N_sensors, N_particles,
-                      dip_r, pos_r, yout, n_col_stride):
+def quadrupole_Bz_sus(xin, N_sensors, N_particles, dip_r, pos_r, yout, n_col_stride):
     for i in range(N_sensors):
         dr = pos_r[i] - dip_r
         x, y, z = dr[:, 0], dr[:, 1], dr[:, 2]
@@ -31,7 +30,6 @@ def quadrupole_Bz_sus(xin, N_sensors, N_particles,
         r = np.sqrt(r2)
         g = 1e-7 / (r2 * r2 * r2 * r)
 
-        # Fill the Q array in the corresponding entries
         yout[i] += torch.dot(g * np.sqrt(3 / 2) * z * (-3 * r2 + 5 * z2), xin[3::n_col_stride])
         yout[i] += torch.dot(g * -np.sqrt(2) * x * (r2 - 5 * z2), xin[4::n_col_stride])
         yout[i] += torch.dot(g * -np.sqrt(2) * y * (r2 - 5 * z2), xin[5::n_col_stride])
@@ -75,7 +73,7 @@ def octupole_Bz_sus(xin, N_sensors, N_particles,
 
 
 def Bflux_residual_f(xin, Bdata, N_sensors, N_cols, N_particles, particle_positions,
-                     expansion_limit, scan_positions, engine='numba'):
+                     expansion_limit, scan_positions, engine='numba', full_output=False):
 
     # x is input magnetic moment, output y data vector
     yout = torch.zeros(N_sensors)
@@ -93,6 +91,13 @@ def Bflux_residual_f(xin, Bdata, N_sensors, N_cols, N_particles, particle_positi
 
     # the misfit functional that is minimised:
     mf = torch.sum((yout - Bdata) ** 2)
-    print(f'{mf=}')
-    # mf = torch.max(torch.abs((yout - Bdata) / torch.abs(Bdata)))
-    return mf
+
+    # Using torch's norm:
+    # mf = torch.norm(yout - Bdata, p=torch.inf)
+
+    # print(f'{mf=}')
+    # mf = torch.max(torch.abs((yout - Bdata)))
+    if full_output:
+        return yout, mf
+    else:
+        return mf

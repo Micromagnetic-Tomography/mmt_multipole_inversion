@@ -3,6 +3,7 @@ import mmt_multipole_inversion.magnetic_sample as msp
 import mmt_multipole_inversion.multipole_inversion as minv
 from pathlib import Path
 import pytest
+import matplotlib.pyplot as plt
 
 LIMIT_params = ['dipole', 'quadrupole', 'octupole']
 
@@ -93,6 +94,13 @@ def test_inversion_single_dipole_torch(limit):
 
     print(f'{rel_diff=}')
     print(f'{inv_model.inv_multipole_moments[0]=}')
+
+    print(inv_model.inv_Bz_array.flatten()[:10])
+    print(inv_model.Bz_array.flatten()[:10])
+    f, axs = plt.subplots(ncols=2)
+    axs[0].imshow(inv_model.inv_Bz_array, origin='lower', cmap='RdYlBu')
+    axs[1].imshow(inv_model.Bz_array, origin='lower', cmap='RdYlBu')
+    plt.show()
 
 
 if __name__ == '__main__':
