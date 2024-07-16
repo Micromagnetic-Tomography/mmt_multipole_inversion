@@ -387,7 +387,7 @@ class MultipoleInversion(object):
                     (i + 1) * self.Nx_surf * self.Ny_surf] = np.reshape(
                 self.Bz_matrix[i], self.Nx_surf * self.Ny_surf, order='C')
         if method == 'direct':
-            self.inv_multipole_moments = slin.lstsq(self.Q, Bz_Data)
+            self.inv_multipole_moments, res, rnk, s = slin.lstsq(self.Q, Bz_Data)
             self.inv_multipole_moments.shape = (self.N_particles, self._N_cols)
             # Forward field
             self.inv_Bz_matrix = np.matmul(self.Q,
