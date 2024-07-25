@@ -4,6 +4,7 @@ import time
 import json
 # from scipy.special import sph_harm
 import scipy.linalg as slin
+import scipy.optimize as so
 # import warnings
 # try:
 #     import tensorflow as tf
@@ -35,6 +36,7 @@ from .susceptibility_modules.pylops.pylopsclass import GreensMatrix
 import torch
 import torchmin as tmin
 from .susceptibility_modules.torchm.torch_functions import Bflux_residual_f
+from .susceptibility_modules.scipym.spm_functions import Bflux_residual_f as spm_Bflux_residual_f
 
 # -----------------------------------------------------------------------------
 
@@ -388,6 +390,52 @@ class MultipoleInversion(object):
             self.inv_multipole_moments.shape = (self.N_particles, self._N_cols)
             # if info != 0:
             #     print(f'Inversion failed, errorcode: {info}')
+
+        elif method == 'minimize_bfgs':
+
+            scan_positions = np.ones((self.N_sensors, 3))
+            X_pos, Y_pos = np.meshgrid(self.Sx_range, self.Sy_range)
+            scan_positions[:, :2] = np.stack((X_pos, Y_pos), axis=2).reshape(-1, 2)
+            scan_positions[:, 2] *= self.Hz
+            if self.verbose:
+                print('Using scipy minimize for an iterative inversion')
+
+            # tBz = torch.from_numpy(self.Bz_array)
+            # tParticlePositions = torch.from_numpy(self.particle_positions)
+            # tScanPositions = torch.from_numpy(scan_positions)
+            def minF(x):
+                return spm_Bflux_residual_f(x, self.Bz_array.flatten(), self.N_sensors, self._N_cols, self.N_particles, self.particle_positions,
+                                            self.expansion_limit, scan_positions, engine='numba')
+
+            # Random init state:
+            # x0 = (2 * np.random.rand(self.N_particles * self._N_cols) - 1.).reshape(-1, self._N_cols)
+            # x0[:, :3] /= np.linalg.norm(x0[:, :3], axis=1)
+            # x0 *= 1e-12
+            # x0[:, 3:] = 1e-18
+            # x0.shape = (-1)
+
+            # Uniform init state:
+            # x0 = 1e-12 * np.ones(self.N_particles * self._N_cols)
+            # if self._expansion_limit == 'quadrupole':
+            #     x0[3:] = 1e-18
+            x0 = np.ones(self.N_particles * self._N_cols)
+
+            
+            # minResult = tmin.minimize(minF, x0, options=dict(xtol=1e-30, gtol=1e-25, line_search='strong-wolfe', disp=2), method='bfgs', disp=2)
+            minResult = so.minimize(minF, x0, options=dict(gtol=1e-25, xrtol=1e-25, disp=True),
+                                    # options=dict(xtol=1e-25, gtol=1e-25, line_search='strong-wolfe', normp=2, disp=2),
+                                    method='BFGS')
+            # minResult = tmin.minimize(minF, x0, options=dict(gtol=1e-25, disp=2), method='cg', disp=2)
+
+            self.inv_multipole_moments = np.array(minResult.x)
+            print(minResult.x)
+            print('oooooooooooooooo')
+            self.inv_multipole_moments.shape = (self.N_particles, self._N_cols)
+
+            self.inv_Bz_array, _ = spm_Bflux_residual_f(self.inv_multipole_moments.flatten(), self.Bz_array.flatten(), self.N_sensors, self._N_cols, self.N_particles, self.particle_positions,
+                                                        self.expansion_limit, scan_positions, engine='numba', full_output=True)
+            self.inv_Bz_array.shape = (self.Ny_surf, -1)
+
         elif method == 'torchmin':
             scan_positions = np.ones((self.N_sensors, 3))
             X_pos, Y_pos = np.meshgrid(self.Sx_range, self.Sy_range)
@@ -413,7 +461,7 @@ class MultipoleInversion(object):
             # x0 = 1e-12 * np.ones(self.N_particles * self._N_cols)
             # if self._expansion_limit == 'quadrupole':
             #     x0[3:] = 1e-18
-            
+
             # minResult = tmin.minimize(minF, x0, options=dict(xtol=1e-30, gtol=1e-25, line_search='strong-wolfe', disp=2), method='bfgs', disp=2)
             minResult = tmin.minimize(minF, x0, options=dict(xtol=1e-25, gtol=1e-25, line_search='strong-wolfe', normp=2, disp=2), method='l-bfgs', disp=2)
             # minResult = tmin.minimize(minF, x0, options=dict(gtol=1e-25, disp=2), method='cg', disp=2)
