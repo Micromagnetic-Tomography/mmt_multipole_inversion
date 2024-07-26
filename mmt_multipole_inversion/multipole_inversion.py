@@ -220,8 +220,7 @@ class MultipoleInversion(object):
             print(f'Scanning array size = {len(self.Sx_range)} x {len(self.Sy_range)}')
         self.N_sensors = self.Nx_surf * self.Ny_surf
 
-    def generate_forward_matrix(self,
-                                optimization: _MethodOptions = 'numba'):
+    def generate_forward_matrix(self, optimization: _MethodOptions = 'numba'):
         """
         Generate the forward matrix adding the field contribution from all
         the particles for every grid point at the scan surface. The field is
@@ -415,21 +414,23 @@ class MultipoleInversion(object):
             # x0.shape = (-1)
 
             # Uniform init state:
-            # x0 = 1e-12 * np.ones(self.N_particles * self._N_cols)
-            # if self._expansion_limit == 'quadrupole':
-            #     x0[3:] = 1e-18
-            x0 = np.ones(self.N_particles * self._N_cols)
-
+            x0 = 1e-13 * np.ones(self.N_particles * self._N_cols)
+            if self._expansion_limit == 'quadrupole':
+                x0[3:] *= 1e-6
+            # x0 = np.ones(self.N_particles * self._N_cols)
             
-            # minResult = tmin.minimize(minF, x0, options=dict(xtol=1e-30, gtol=1e-25, line_search='strong-wolfe', disp=2), method='bfgs', disp=2)
-            minResult = so.minimize(minF, x0, options=dict(gtol=1e-25, xrtol=1e-25, disp=True),
+            # Nelder-Mead working fine:
+            minResult = so.minimize(minF, x0, tol=1e-20, options=dict(maxiter=10, disp=True),
+                                    method='Nelder-Mead')
+
+            # CG or gradient-dependent method have problems with jacobian calculation:
+            minResult = so.minimize(minF, minResult.x, tol=1e-25, jac='cs', # options=dict(gtol=1e-25, xrtol=1e-20, disp=True),
+                                    options=dict(disp=True),
                                     # options=dict(xtol=1e-25, gtol=1e-25, line_search='strong-wolfe', normp=2, disp=2),
-                                    method='BFGS')
+                                    method='CG')
             # minResult = tmin.minimize(minF, x0, options=dict(gtol=1e-25, disp=2), method='cg', disp=2)
 
             self.inv_multipole_moments = np.array(minResult.x)
-            print(minResult.x)
-            print('oooooooooooooooo')
             self.inv_multipole_moments.shape = (self.N_particles, self._N_cols)
 
             self.inv_Bz_array, _ = spm_Bflux_residual_f(self.inv_multipole_moments.flatten(), self.Bz_array.flatten(), self.N_sensors, self._N_cols, self.N_particles, self.particle_positions,
