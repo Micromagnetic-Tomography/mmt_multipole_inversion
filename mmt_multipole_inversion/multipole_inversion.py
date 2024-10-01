@@ -379,12 +379,13 @@ class MultipoleInversion(object):
                     print('Generating forward matrix')
                 self.generate_forward_matrix()
             Bz_Data = np.reshape(self.Bz_array, self.N_sensors, order='C')
+            if self.verbose:
+                print('Using direct inversion')
             self.inv_multipole_moments, res, rnk, s = slin.lstsq(self.Q, Bz_Data)
             self.inv_multipole_moments.shape = (self.N_particles, self._N_cols)
             # Forward field
             self.inv_Bz_array = np.matmul(self.Q,
-                                           self.inv_multipole_moments.reshape(
-                                               -1))
+                                          self.inv_multipole_moments.reshape(-1))
             self.inv_Bz_array.shape = (self.Ny_surf, self.Nx_surf)
         else:
             if method == 'np_pinv':
