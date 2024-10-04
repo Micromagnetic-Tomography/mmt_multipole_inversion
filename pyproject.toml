@@ -1,3 +1,11 @@
+# This project requires torch for the minimization library using tensors
+# By default, the library will install CPU-only torch to avoid all cuda dependencies
+#   poetry install --sync -E cpu
+# If you need CUDA for torch, this is optional:
+#   poetry install --sync -E cuda --with cuda
+#
+# This pyproject file is based on the repository:
+#   https://github.com/lucaspar/poetry-torch/ 
 [tool.poetry]
 name = "mmt_multipole_inversion"
 version = "1.0"
@@ -5,6 +13,7 @@ description = "Library to generate scan grid measurements from multipole sources
 authors = ["D. Cortés-Ortuño <d.i.cortes@uu.nl>", "K. Fabian", "L. V. de Groot"]
 license = "MIT"
 readme = "README.md"
+# package-mode = false
 
 packages = [
     {include = "mmt_multipole_inversion"}
@@ -28,7 +37,35 @@ matplotlib = "^3.2"
 numba = ">=0.56"
 Cython = "^0.29.30"
 pylops = ">=2.0.0"
-pytorch-minimize = ">=0.0.2"
+pytorch-minimize = { git="https://github.com/rfeinman/pytorch-minimize.git", rev="master", markers = "extra=='cpu' and extra!='gpu'" }
+torch = { version = "^2.2.1", source = "torch_cpu", markers = "extra=='cpu' and extra!='gpu'" }
+# torchvision = { version="^0.17.1", optional = true }
+
+# [tool.poetry.group.cpu.dependencies]
+# torchvision = { version="^0.17.1", source = "torch_cpu", markers = "extra=='cpu' and extra!='gpu'" }
+# pytorch-minimize = { git="https://github.com/rfeinman/pytorch-minimize.git", rev="master", markers = "extra=='cpu' and extra!='gpu'" }
+
+[tool.poetry.group.gpu]
+optional = true
+
+[tool.poetry.group.gpu.dependencies]
+torch = { version = "^2.2.1", source = "torch_cuda", markers = "extra=='gpu' and extra!='cpu'" }
+# torchvision = { version="^0.17.1", source = "torch_cuda", markers = "extra=='gpu' and extra!='cpu'" }
+pytorch-minimize = { git="https://github.com/rfeinman/pytorch-minimize.git", rev="master", markers = "extra=='gpu' and extra!='cpu'" }
+
+[tool.poetry.extras]
+cpu = ["torch", "pytorch-minimize"]
+gpu = ["torch", "pytorch-minimize"]
+
+[[tool.poetry.source]]
+name = "torch_cpu"
+url = "https://download.pytorch.org/whl/cpu"
+priority = "explicit"
+
+[[tool.poetry.source]]
+name = "torch_cuda"
+url = "https://download.pytorch.org/whl/cu118"
+priority = "explicit"
 
 [tool.poetry.group.dev.dependencies]
 jupyter = "^1.0.0"
@@ -37,6 +74,7 @@ requests = "^2.28.1"
 Shapely = "^1.8.4"
 jupytext = "^1.14.1"
 
+
 [build-system]
-requires = ["setuptools", "poetry-core>=1.1.14", "cython>0.29", "numpy<1.23"]
+requires = ["setuptools", "poetry-core>=1.1.14", "cython>0.29", "numpy>=1.23"]
 build-backend = "poetry.core.masonry.api"
