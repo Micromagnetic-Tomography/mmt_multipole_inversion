@@ -96,6 +96,40 @@ def test_inversion_single_dipole_numba(limit):
         assert rel_diff < 1e-5
 
 
+@pytest.mark.parametrize("limit", LIMIT_params, ids=['dip', 'quad', 'oct'])
+def test_direct_inversion_single_dipole_numba(limit):
+
+    TEST_SAVEDIR = Path('TEST_TMP')
+
+    # Generate arrays from the Forward model using a single dipole source
+    fw_model_fun()
+
+    inv_model = minv.MultipoleInversion(
+        TEST_SAVEDIR / 'MetaDict_fw_model_test_inversion.json',
+        TEST_SAVEDIR / 'MagneticSample_fw_model_test_inversion.npz',
+        expansion_limit=limit,
+        sus_functions_module='spherical_harmonics_basis')
+    inv_model.generate_measurement_mesh()
+    inv_model.compute_inversion(method='direct')
+    print(inv_model.Q)
+
+    Ms = 1e5
+    orientation = np.array([1., 0., 1.])
+    orientation /= np.linalg.norm(orientation)
+    expected_magnetization = Ms * (1 * 1e-18) * orientation
+
+    # Compare the inverted dipole moments from the theoretical value by
+    # analyzing the relative error
+    print('POINT direct')
+    for i in range(3):
+        rel_diff = abs(inv_model.inv_multipole_moments[0][i] - expected_magnetization[i])
+        if expected_magnetization[i] > 0:
+            rel_diff /= abs(expected_magnetization[i])
+        # print(rel_diff)
+        print(inv_model.inv_multipole_moments[0][i])
+        assert rel_diff < 1e-5
+
+
 @pytest.mark.skipif(not HASCUDA, reason="CUDA not found")
 @pytest.mark.parametrize("limit", LIMIT_params, ids=['dip', 'quad', 'oct'])
 def test_compare_cuda_numba_populate_array(limit):
@@ -269,5 +303,6 @@ if __name__ == '__main__':
     # test_inversion_single_dipole(limit='octupole')
 
     test_inversion_single_dipole_numba(limit='quadrupole')
+    test_direct_inversion_single_dipole_numba(limit='quadrupole')
     # test_inversion_single_dipole_numba_sensor_3D('quadrupole')
     test_inversion_single_dipole_numba_sensor_2D('quadrupole')
