@@ -353,7 +353,7 @@ class MultipoleInversion(object):
                 np_pinv  -> Numpy's pinv
                 sp_pinv  -> Scipy's pinv (not recommended -> memory issues)
                 sp_pinv2 -> Scipy's pinv2 (this will call sp_pinv instead)
-                direct   -> direct inverse (most memory efficient)
+                direct   -> direct inverse (quickest and most memory efficient)
         sigma_field_noise
             If a `float` is specified, a covariance matrix is produced and
             stored in the `covariance_matrix` variable. This matrix uses
@@ -381,7 +381,8 @@ class MultipoleInversion(object):
             Bz_Data = np.reshape(self.Bz_array, self.N_sensors, order='C')
             if self.verbose:
                 print('Using direct inversion')
-            self.inv_multipole_moments, res, rnk, s = slin.lstsq(self.Q, Bz_Data)
+            self.inv_multipole_moments, res, rnk, s = slin.lstsq(
+                self.Q, Bz_Data, **method_kwargs)
             self.inv_multipole_moments.shape = (self.N_particles, self._N_cols)
             # Forward field
             self.inv_Bz_array = np.matmul(self.Q,
