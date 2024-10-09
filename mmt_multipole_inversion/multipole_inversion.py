@@ -1,3 +1,4 @@
+from enum import EnumCheck
 import numpy as np
 import time
 # import datetime
@@ -24,7 +25,12 @@ from . import susceptibility_modules as sus_mods
 from typing import Optional
 from typing import Literal  # Working with Python >3.8
 from typing import Union    # Working with Python >3.8
+from collections.abc import Callable
 from . import plot_tools as pt
+
+# For the mask using image:
+import PIL
+import scipy.interpolate as si
 
 # -----------------------------------------------------------------------------
 
@@ -226,8 +232,7 @@ class MultipoleInversion(object):
             print(f'Scanning array size = {len(self.Sx_range)} x {len(self.Sy_range)}')
         self.N_sensors = self.Nx_surf * self.Ny_surf
 
-    def generate_forward_matrix(self,
-                                optimization: _MethodOptions = 'numba'):
+    def generate_forward_matrix(self, optimization: _MethodOptions = 'numba'):
         """
         Generate the forward matrix adding the field contribution from all
         the particles for every grid point at the scan surface. The field is
@@ -332,6 +337,74 @@ class MultipoleInversion(object):
         if self.verbose:
             print(f'Generation of Q matrix took: {t1 - t0:.4f} s')
         # print('Q shape:', Q.shape)
+
+
+    def create_field_mask(self, fieldMaskTool: Optional[Callable[[np.ndarray], Bool], np.ndarray]):
+        """Creates a mask array for the Bz field array
+        """
+
+        # Create all the positions of the scan grid
+        scan_positions = np.ones((self.N_sensors, 3))
+        X_pos, Y_pos = np.meshgrid(self.Sx_range, self.Sy_range)
+        scan_positions[:, :2] = np.stack((X_pos, Y_pos), axis=2).reshape(-1, 2)
+        scan_positions[:, 2] *= self.Hz
+
+        self.fieldMask = np.zeros_like(self.Bz_array).astype(np.bool)
+
+        # Function of 3 variables: x,y,z
+        if callable(fieldMaskTool):
+            for i, r in enumerate(scan_positions):
+                self.fieldMask[i] = fieldMaskTool(r)
+        # Numpy array:
+        elif isinstance(fieldMaskTool, np.ndarray):
+            # Check that shapes are the same
+            if not (fieldMaskTool.shape[0] == self.fieldMask.shape[0]):
+                # TODO: search for the right exception
+                raise Exception()
+            else:
+                self.fieldMask[:] = fieldMaskTool
+        elif isinstance(fieldMaskTool, (str, Path)):
+            # if self.verbose:
+            #     print('Using image')
+
+            # Error opening file is handled by PIL.Image
+            with PIL.Image.open(fieldMaskTool) as imFile:
+                # Make a two color map by converting the image
+                # im = imFile.convert(mode='P', palette=PIL.Image.Palette.ADAPTIVE, colors=2)
+                im = imFile.load()
+
+            if not ((im.shape[0] == self.fieldMask.shape[0]) and 
+                    (im.shape[1] == self.fieldMask.shape[1])):
+                if self.verbose:
+                    print('Interpolating image into mask')
+
+                im_xrange = np.linspace(self.Sx_range[0], self.Sx_range[-1], im.shape[0])
+                im_yrange = np.linspace(self.Sy_range[0], self.Sy_range[-1], im.shape[1])
+                # im_positions = np.ones((self.N_sensors, 2))
+                # X_pos, Y_pos = np.meshgrid(im_xrange, im_yrange)
+                # im_positions[:, :2] = np.stack((X_pos, Y_pos), axis=2).reshape(-1, 2)
+                # im_positions[:, 2] *= self.Hz
+
+                # NOTE: Easier: use rescaling from PILLOW
+                # imRes = im.resize(size=(self.Sy_range.shape[0], self.Sx_range.shape[0]),
+                #                   resample=PIL.Image.Resampling.NEAREST)
+                # imRes = imRes.convert(mode='P', palette=PIL.Image.Palette.ADAPTIVE, colors=2)
+
+                # More precise: use scipy interpolation in 2D; the method uses np.meshgrid with
+                # indexing='ij' (matrix order), so the row coordinate increases first. To fit the image, we have
+                # to invert the order of the x and y ranges
+                im_arr = np.asarray(im)
+                interp = si.RegularGridInterpolator((im_yrange, im_xrange), im_arr.T, method='nearest') 
+                idata = interp(scan_positions[:, [1, 0]])
+                # Reshape to recover the mask with Cartesian axes coordinates
+                self.fieldMask[:] = idata.reshape(self.Sy_range.shape[0], -1).T
+
+            else:
+                if self.verbose:
+                    print('Using the specified image with original resolution')
+                self.fieldMask = np.asarray(im)
+
+        # TODO: add option for using image as a mask? -> interpolation
 
     def compute_inversion(self,
                           method: _InvMethodOps = 'sp_pinv',
