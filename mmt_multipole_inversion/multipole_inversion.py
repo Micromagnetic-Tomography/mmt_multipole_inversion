@@ -195,6 +195,9 @@ class MultipoleInversion(object):
         # Instantiate the forward matrix
         self.Q = np.empty(0)
 
+        # Generate field mask array with True everywhere as default
+        self.fieldMask = np.ones_like(self.Bz_array).astype(np.bool)
+
     @property
     def expansion_limit(self):
         return self._expansion_limit
@@ -339,7 +342,7 @@ class MultipoleInversion(object):
         # print('Q shape:', Q.shape)
 
 
-    def create_field_mask(self, fieldMaskTool: Optional[Callable[[np.ndarray], Bool], np.ndarray]):
+    def create_field_mask(self, fieldMaskTool: Union[Callable[[np.ndarray], bool], np.ndarray]):
         """Creates a mask array for the Bz field array
         """
 
@@ -349,7 +352,6 @@ class MultipoleInversion(object):
         scan_positions[:, :2] = np.stack((X_pos, Y_pos), axis=2).reshape(-1, 2)
         scan_positions[:, 2] *= self.Hz
 
-        self.fieldMask = np.zeros_like(self.Bz_array).astype(np.bool)
 
         # Function of 3 variables: x,y,z
         if callable(fieldMaskTool):
@@ -404,11 +406,13 @@ class MultipoleInversion(object):
                     print('Using the specified image with original resolution')
                 self.fieldMask = np.asarray(im)
 
-        # TODO: add option for using image as a mask? -> interpolation
+        # Expect that the array only contain 0s and 1s
+        self.fieldMask.astype(np.bool)
+
 
     def compute_inversion(self,
                           method: _InvMethodOps = 'sp_pinv',
-                          mask: np.array = None,
+                          apply_field_mask: bool = False,
                           sigma_field_noise: Optional[float] = None,
                           **method_kwargs
                           ):
@@ -450,11 +454,16 @@ class MultipoleInversion(object):
                 print('Generating forward matrix')
             self.generate_forward_matrix()
 
-        idx = np.arange(len(self.Q))
-        if mask is not None:
-            assert len(mask) == len(self.Q), ('mask has incorrect length, '
-                                              f'should be: {len(self.Q)}')
-            idx = np.where(mask == 0)[0]
+        #idx = np.arange(len(self.Q))
+        #if mask is not None:
+        #    assert len(mask) == len(self.Q), ('mask has incorrect length, '
+        #                                      f'should be: {len(self.Q)}')
+        #    idx = np.where(mask == 0)[0]
+        if apply_field_mask:
+            if self.verbose:
+                print('Using field mask from the self.fieldMask array. '
+                      'Confirm that you are using the right mask by calling the create_field_mask() method.')
+        idx = self.fieldMask.reshape(-1)
 
         if method == 'np_pinv':
             if self.verbose:
@@ -480,8 +489,7 @@ class MultipoleInversion(object):
         # print('mags:', mags.shape)
 
         # Forward field
-        self.inv_Bz_array = np.matmul(self.Q,
-                                      self.inv_multipole_moments.reshape(-1))
+        self.inv_Bz_array = np.matmul(self.Q, self.inv_multipole_moments.reshape(-1))
         self.inv_Bz_array.shape = (self.Ny_surf, -1)
 
         # Generate covariance matrix if sigma not none
