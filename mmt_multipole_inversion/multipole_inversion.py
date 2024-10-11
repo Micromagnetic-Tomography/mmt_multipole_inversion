@@ -196,7 +196,7 @@ class MultipoleInversion(object):
         self.Q = np.empty(0)
 
         # Generate field mask array with True everywhere as default
-        self.fieldMask = np.ones_like(self.Bz_array).astype(np.bool)
+        self.fieldMask = np.ones_like(self.Bz_array).astype(bool)
 
     @property
     def expansion_limit(self):
@@ -225,6 +225,7 @@ class MultipoleInversion(object):
         rounding the lateral size by the grid step size, e.g. `round(Sx / Sdx)`
         """
 
+        # TODO: Check that Sx/Sy correspond to the dimensions of the Bz array
         # Generate measurement mesh
         self.Sx_range = self.sensor_origin_x + np.arange(round(self.Sx / self.Sdx)) * self.Sdx
         self.Sy_range = self.sensor_origin_y + np.arange(round(self.Sy / self.Sdy)) * self.Sdy
@@ -232,7 +233,10 @@ class MultipoleInversion(object):
         self.Ny_surf = len(self.Sy_range)
 
         if self.verbose:
-            print(f'Scanning array size = {len(self.Sx_range)} x {len(self.Sy_range)}')
+            print('Scanning array sizes (row x col)')
+            print(f'Computed Sx x Sy sizes  : {len(self.Sy_range)} x {len(self.Sx_range)}')
+            print(f'Bz data matrix size     : {self.Bz_array.shape[0]} x {self.Bz_array.shape[1]}')
+
         self.N_sensors = self.Nx_surf * self.Ny_surf
 
     def generate_forward_matrix(self, optimization: _MethodOptions = 'numba'):
@@ -342,7 +346,7 @@ class MultipoleInversion(object):
         # print('Q shape:', Q.shape)
 
 
-    def create_field_mask(self, fieldMaskTool: Union[Callable[[np.ndarray], bool], np.ndarray]):
+    def create_field_mask(self, fieldMaskTool: Union[Callable[[np.ndarray], bool], np.ndarray, str, Path]):
         """Creates a mask array for the Bz field array
         """
 
@@ -373,41 +377,44 @@ class MultipoleInversion(object):
             with PIL.Image.open(fieldMaskTool) as imFile:
                 # Make a two color map by converting the image
                 # im = imFile.convert(mode='P', palette=PIL.Image.Palette.ADAPTIVE, colors=2)
-                im = imFile.load()
+                # imFile.load()
+                imFile = imFile.convert(mode='P', palette=PIL.Image.Palette.ADAPTIVE, colors=2)
+                # NOTE: PILlow image loading sets y axis in the opposite direction c/t Cartesian axes
+                im_arr = np.asarray(imFile)[::-1, :]
 
-            if not ((im.shape[0] == self.fieldMask.shape[0]) and 
-                    (im.shape[1] == self.fieldMask.shape[1])):
+            if not ((im_arr.shape[0] == self.fieldMask.shape[0]) and 
+                    (im_arr.shape[1] == self.fieldMask.shape[1])):
                 if self.verbose:
                     print('Interpolating image into mask')
 
-                im_xrange = np.linspace(self.Sx_range[0], self.Sx_range[-1], im.shape[0])
-                im_yrange = np.linspace(self.Sy_range[0], self.Sy_range[-1], im.shape[1])
+                # NOTE: the xrange is discretized bythe number of columns
+                im_xrange = np.linspace(self.Sx_range[0], self.Sx_range[-1], im_arr.shape[1])
+                im_yrange = np.linspace(self.Sy_range[0], self.Sy_range[-1], im_arr.shape[0])
                 # im_positions = np.ones((self.N_sensors, 2))
                 # X_pos, Y_pos = np.meshgrid(im_xrange, im_yrange)
                 # im_positions[:, :2] = np.stack((X_pos, Y_pos), axis=2).reshape(-1, 2)
                 # im_positions[:, 2] *= self.Hz
 
                 # NOTE: Easier: use rescaling from PILLOW
-                # imRes = im.resize(size=(self.Sy_range.shape[0], self.Sx_range.shape[0]),
+                # imRes = im.resize(size=(self.Sx_range.shape[0], self.Sy_range.shape[0]),
                 #                   resample=PIL.Image.Resampling.NEAREST)
                 # imRes = imRes.convert(mode='P', palette=PIL.Image.Palette.ADAPTIVE, colors=2)
 
                 # More precise: use scipy interpolation in 2D; the method uses np.meshgrid with
                 # indexing='ij' (matrix order), so the row coordinate increases first. To fit the image, we have
-                # to invert the order of the x and y ranges
-                im_arr = np.asarray(im)
-                interp = si.RegularGridInterpolator((im_yrange, im_xrange), im_arr.T, method='nearest') 
-                idata = interp(scan_positions[:, [1, 0]])
+                # to transpose the image array
+                interp = si.RegularGridInterpolator((im_xrange, im_yrange), im_arr.T, method='nearest') 
+                idata = interp(scan_positions[:, [0, 1]])
                 # Reshape to recover the mask with Cartesian axes coordinates
-                self.fieldMask[:] = idata.reshape(self.Sy_range.shape[0], -1).T
+                self.fieldMask[:] = idata.reshape(self.Sy_range.shape[0], -1)
 
             else:
                 if self.verbose:
                     print('Using the specified image with original resolution')
-                self.fieldMask = np.asarray(im)
+                self.fieldMask[:] = im_arr
 
         # Expect that the array only contain 0s and 1s
-        self.fieldMask.astype(np.bool)
+        self.fieldMask.astype(bool)
 
 
     def compute_inversion(self,
@@ -459,20 +466,28 @@ class MultipoleInversion(object):
         #    assert len(mask) == len(self.Q), ('mask has incorrect length, '
         #                                      f'should be: {len(self.Q)}')
         #    idx = np.where(mask == 0)[0]
+
+        # Reshape Bz (without copy!) to pass it to the C/cuda/numba libraries
+        # NOTE: This reshape of Bz_array assumes it is using C order in memory (default in np)
+        self.Bz_array.shape = (self.N_sensors,)  # Can also use -1
         if apply_field_mask:
             if self.verbose:
                 print('Using field mask from the self.fieldMask array. '
                       'Confirm that you are using the right mask by calling the create_field_mask() method.')
-        idx = self.fieldMask.reshape(-1)
+            Qmatrix = self.Q[self.fieldMask.reshape(-1)]
+            Bzdata = self.Bz_array[self.fieldMask.reshape(-1)]
+        else:
+            Qmatrix = self.Q
+            Bzdata = self.Bz_array
 
         if method == 'np_pinv':
             if self.verbose:
                 print('Using numpy.pinv for inversion')
-            self.IQ = np.linalg.pinv(self.Q[idx], **method_kwargs)
+            self.IQ = np.linalg.pinv(Qmatrix, **method_kwargs)
         elif method == 'sp_pinv' or method == 'sp_pinv2':
             if self.verbose:
                 print('Using scipy.linalg.pinv for inversion')
-            self.IQ = slin.pinv(self.Q[idx], **method_kwargs)
+            self.IQ = slin.pinv(Qmatrix, **method_kwargs)
         # elif method == 'tf_pinv':
         #     if self.verbose:
         #         print('Using tf.linalg.pinv for inversion')
@@ -481,10 +496,9 @@ class MultipoleInversion(object):
             raise ValueError(f'Method {method} not implemented')
 
         # print('Bz_data shape OLD:', Bz_array.shape)
-        Bz_Data = np.reshape(self.Bz_array, self.N_sensors, order='C')
         # print('Bz_data shape:', Bz_Data.shape)
         # print('IQ shape:', IQ.shape)
-        self.inv_multipole_moments = np.dot(self.IQ, Bz_Data[idx])
+        self.inv_multipole_moments = np.dot(self.IQ, Bzdata)
         self.inv_multipole_moments.shape = (self.N_particles, self._N_cols)
         # print('mags:', mags.shape)
 
@@ -499,6 +513,9 @@ class MultipoleInversion(object):
             self.inv_moments_std = np.sqrt(np.diag(self.covariance_matrix))
             # Reshape into (N_particles, N_multipoles) matrix
             self.inv_moments_std.shape = (self.N_particles, -1)
+
+        # Assuming that Sx/Sy ranges correspond to the computed sizes for the scanning array
+        self.Bz_array.shape = (self.Sy_range.shape[0], -1)
 
     def save_multipole_moments(self,
                                save_name: str = 'TIME_STAMP',

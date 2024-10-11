@@ -103,6 +103,7 @@ def plot_inversion_Bz(ax,
                       scatter_args={'c': 'k'},
                       imshow_args=None,
                       dimension_scale=1., data_scale=1.,
+                      apply_field_mask=False
                       ):
     """Plot the inverted field Bz and the positions of the particles
 
@@ -137,6 +138,12 @@ def plot_inversion_Bz(ax,
     """
     mi = MultInvInst
 
+    if apply_field_mask:
+        inv_bz = mi.inv_Bz_array.copy()
+        inv_bz[mi.fieldMask] = float("nan")
+    else:
+        inv_bz = mi.inv_Bz_array
+
     dms = dimension_scale
     dds = data_scale
 
@@ -146,10 +153,10 @@ def plot_inversion_Bz(ax,
     # plt.colorbar()
     if not imshow_args:
         cf = ax.contourf(mi.Sx_range * dms, mi.Sy_range * dms,
-                         mi.inv_Bz_array * dds, **contourf_args)
+                         inv_bz * dds, **contourf_args)
     else:
         dx, dy = 0.5 * mi.Sdx * dms, 0.5 * mi.Sdy * dms
-        cf = ax.imshow(mi.inv_Bz_array * dds,
+        cf = ax.imshow(inv_bz * dds,
                        origin='lower',
                        extent=[mi.Sx_range.min() * dms - dx,
                                mi.Sx_range.max() * dms + dx,
@@ -158,7 +165,7 @@ def plot_inversion_Bz(ax,
                        **imshow_args)
 
     c1 = ax.contour(mi.Sx_range * dms, mi.Sy_range * dms,
-                    mi.inv_Bz_array * dds, **contour_args)
+                    inv_bz * dds, **contour_args)
 
     if scatter_args:
         c2 = ax.scatter(mi.particle_positions[:, 0] * dms,

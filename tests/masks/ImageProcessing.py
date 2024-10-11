@@ -49,7 +49,7 @@ im_arr[-10, :]
 
 im_arr
 
-Sx, Sy = 10.5, 15.
+Sx, Sy = 15., 10.5
 Sdx, Sdy = 0.5, 0.5
 
 sx_range = np.arange(np.around(Sx / Sdx)) * Sdx
@@ -80,9 +80,10 @@ scan_positions[:, 2] *= 0.001
 scan_positions.shape
 
 im_positions = np.ones((im_arr.shape[0] * im_arr.shape[1], 2))
-im_xrange = np.linspace(sx_range[0], sx_range[-1], im_arr.shape[0])
-im_yrange = np.linspace(sy_range[0], sy_range[-1], im_arr.shape[1])
-imX_pos, imY_pos = np.meshgrid(im_xrange, im_yrange, indexing='ij')
+# Note that the x range has the shape of columns!
+im_xrange = np.linspace(sx_range[0], sx_range[-1], im_arr.shape[1])
+im_yrange = np.linspace(sy_range[0], sy_range[-1], im_arr.shape[0])
+imX_pos, imY_pos = np.meshgrid(im_xrange, im_yrange, indexing='xy')
 
 np.stack((X_pos, Y_pos), axis=2).shape
 
@@ -104,23 +105,20 @@ im_positions
 
 im_arr[48]
 
-plt.scatter(im_positions[:, 1], im_positions[:, 0], c=im_arr.reshape(-1), s=5)
+plt.scatter(im_positions[:, 0], im_positions[:, 1], c=im_arr.reshape(-1), s=5)
 plt.show()
 
 # ## Regular Grid Interpolation
 
-interp = si.RegularGridInterpolator((im_yrange, im_xrange), im_arr.T, method='nearest') 
-idata = interp(scan_positions[:, [1, 0]])
+interp = si.RegularGridInterpolator((im_xrange, im_yrange), im_arr.T, method='nearest') 
+idata = interp(scan_positions[:, [0, 1]])
 
-plt.scatter(im_positions[:, 1], im_positions[:, 0], c=im_arr.reshape(-1), s=5, alpha=0.2, cmap='RdYlBu')
-plt.scatter(scan_positions[:, 1], scan_positions[:, 0], c=idata.reshape(-1), s=25)
+plt.scatter(im_positions[:, 0], im_positions[:, 1], c=im_arr.reshape(-1), s=5, alpha=0.2, cmap='RdYlBu')
+plt.scatter(scan_positions[:, 0], scan_positions[:, 1], c=idata.reshape(-1), s=25)
 plt.show()
 
-plt.imshow(idata.reshape(sy_range.shape[0], -1).T, origin='lower')
+plt.imshow(idata.reshape(sy_range.shape[0], -1), origin='lower')
 plt.show()
-
-new_idata = idata.reshape(sy_range.shape[0], -1).T
-new_idata.shape
 
 # ## RGI 2
 
@@ -128,7 +126,7 @@ new_idata.shape
 # So we must use the y array as the x input, to match the behavior of the library,
 # where y varies across the rows and is constant across columns
 # im_arr2 = im_arr[:, ::-1]
-interp = si.RegularGridInterpolator((im_xrange, im_yrange), im_arr, method='nearest') 
+interp = si.RegularGridInterpolator((im_xrange, im_yrange), im_arr.T, method='nearest') 
 # interp = si.LinearNDInterpolator(im_positions[:, [1, 0]], im_arr.reshape(-1))
 
 interp((2., 4.8))
@@ -142,7 +140,7 @@ scan_positions[:, [0, 1]]
 
 idata = interp(scan_positions[:, [0, 1]])
 
-plt.scatter(scan_positions[:, 1], scan_positions[:, 0], c=idata.reshape(-1), s=30)
+plt.scatter(scan_positions[:, 0], scan_positions[:, 1], c=idata.reshape(-1), s=30)
 plt.show()
 
 plt.imshow(idata.astype(np.uint8).reshape(sy_range.shape[0], -1))
@@ -150,17 +148,17 @@ plt.show()
 
 # ## Bivariate Spline
 
-interp2 = si.RectBivariateSpline(im_xrange, im_yrange, im_arr, kx=1, ky=1)
+interp2 = si.RectBivariateSpline(im_xrange, im_yrange, im_arr.T, kx=1, ky=1)
 
 idata2 = interp2(scan_positions[:, 0], scan_positions[:, 1], grid=False)
 
-plt.scatter(scan_positions[:, 1], scan_positions[:, 0], c=idata2.reshape(-1), s=30)
+plt.scatter(scan_positions[:, 0], scan_positions[:, 1], c=idata2.reshape(-1), s=30)
 plt.show()
 
 # ## Using image resize
 
 with PIL.Image.open('drawingRectWhite2.png') as imRes:
-    imRes = imRes.resize(size=(sy_range.shape[0], sx_range.shape[0]), resample=PIL.Image.Resampling.NEAREST)
+    imRes = imRes.resize(size=(sx_range.shape[0], sy_range.shape[0]), resample=PIL.Image.Resampling.NEAREST)
     imRes = imRes.convert(mode='P', palette=PIL.Image.Palette.ADAPTIVE, colors=2)
 
 imRes
@@ -172,10 +170,10 @@ plt.imshow(imRes_arr, origin='lower')
 plt.show()
 
 # +
-plt.scatter(im_positions[:, 1], im_positions[:, 0], c=im_arr.reshape(-1), s=5, alpha=0.2, cmap='RdYlBu')
+plt.scatter(im_positions[:, 0], im_positions[:, 1], c=im_arr.reshape(-1), s=5, alpha=0.2, cmap='RdYlBu')
 
-plt.scatter(scan_positions[:, 1], scan_positions[:, 0], 
-            c=imRes_arr.T.reshape(-1), s=30)
+plt.scatter(scan_positions[:, 0], scan_positions[:, 1], 
+            c=imRes_arr.reshape(-1), s=30)
 plt.show()
 # -
 
