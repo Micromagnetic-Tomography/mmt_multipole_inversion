@@ -28,7 +28,9 @@ img
 
 with PIL.Image.open('drawingRectWhite2.png') as im:
     # im.load()
+    im = PIL.ImageChops.invert(im)
     im = im.convert(mode='P', palette=PIL.Image.Palette.ADAPTIVE, colors=2)
+    # im = PIL.ImageChops.invert(im)
 
 # +
 # im = PIL.Image.open('drawing.png').convert(mode='1', dither=None)#.convert(mode='1')
@@ -158,6 +160,7 @@ plt.show()
 # ## Using image resize
 
 with PIL.Image.open('drawingRectWhite2.png') as imRes:
+    imRes = PIL.ImageChops.invert(imRes)
     imRes = imRes.resize(size=(sx_range.shape[0], sy_range.shape[0]), resample=PIL.Image.Resampling.NEAREST)
     imRes = imRes.convert(mode='P', palette=PIL.Image.Palette.ADAPTIVE, colors=2)
 
@@ -175,6 +178,3 @@ plt.scatter(im_positions[:, 0], im_positions[:, 1], c=im_arr.reshape(-1), s=5, a
 plt.scatter(scan_positions[:, 0], scan_positions[:, 1], 
             c=imRes_arr.reshape(-1), s=30)
 plt.show()
-# -
-
-

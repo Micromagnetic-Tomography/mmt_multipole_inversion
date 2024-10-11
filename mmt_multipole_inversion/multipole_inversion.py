@@ -346,27 +346,43 @@ class MultipoleInversion(object):
         # print('Q shape:', Q.shape)
 
 
-    def create_field_mask(self, fieldMaskTool: Union[Callable[[np.ndarray], bool], np.ndarray, str, Path]):
+    def generate_field_mask(self, fieldMaskTool: Union[Callable[[np.ndarray], bool], np.ndarray, str, Path]):
         """Creates a mask array for the Bz field array
+
+        Parameters
+        ----------
+        fieldMaskTool
+            This method accepts different ways to create a filter where no data
+            is specified.  FUNCTION: define a function that depends on
+            `r=(x,y)` as argument, which returns `True` for sites with data and
+            `False` where data is filtered. ARRAY: which has the same
+            dimensions as the `Bz` scanning data array, and where True/False or
+            1/0 is for sites with/without data. STR or PATH: to an image file
+            in black and white, where black pixels are specified for sensor
+            data that is filtered/removed.
         """
 
+        # TODO: this should go in the generate_measurement_mesh method
         # Create all the positions of the scan grid
         scan_positions = np.ones((self.N_sensors, 3))
         X_pos, Y_pos = np.meshgrid(self.Sx_range, self.Sy_range)
         scan_positions[:, :2] = np.stack((X_pos, Y_pos), axis=2).reshape(-1, 2)
         scan_positions[:, 2] *= self.Hz
 
-
-        # Function of 3 variables: x,y,z
+        # Function of 2 variables (scanning field plane): x,y
         if callable(fieldMaskTool):
-            for i, r in enumerate(scan_positions):
+            self.fieldMask.shape = (-1)
+            for i, r in enumerate(scan_positions[:, :2]):
                 self.fieldMask[i] = fieldMaskTool(r)
+            self.fieldMask.shape = (self.Sy_range.shape[0], -1)
         # Numpy array:
         elif isinstance(fieldMaskTool, np.ndarray):
             # Check that shapes are the same
-            if not (fieldMaskTool.shape[0] == self.fieldMask.shape[0]):
+            if not (fieldMaskTool.shape[0] == self.fieldMask.shape[0]
+                    and fieldMaskTool.shape[1] == self.fieldMask.shape[1]):
                 # TODO: search for the right exception
-                raise Exception()
+                raise Exception('Array fieldMaskTool does not match Bz array'
+                                f' with shape {self.fieldMask.shape[0]} x {self.fieldMask.shape[1]}')
             else:
                 self.fieldMask[:] = fieldMaskTool
         elif isinstance(fieldMaskTool, (str, Path)):
@@ -378,6 +394,7 @@ class MultipoleInversion(object):
                 # Make a two color map by converting the image
                 # im = imFile.convert(mode='P', palette=PIL.Image.Palette.ADAPTIVE, colors=2)
                 # imFile.load()
+                imFile = PIL.ImageChops.invert(imFile)  # Invert white/black to get 1 at white pixels, 0 at black
                 imFile = imFile.convert(mode='P', palette=PIL.Image.Palette.ADAPTIVE, colors=2)
                 # NOTE: PILlow image loading sets y axis in the opposite direction c/t Cartesian axes
                 im_arr = np.asarray(imFile)[::-1, :]
@@ -438,9 +455,11 @@ class MultipoleInversion(object):
                 np_pinv  -> Numpy's pinv
                 sp_pinv  -> Scipy's pinv (not recommended -> memory issues)
                 sp_pinv2 -> Scipy's pinv2 (this will call sp_pinv instead)
-        mask
-            True/False masking array for the magnetic field. Values labeled
-            True are ignored. Should have length equal to # of observations
+        apply_field_mask
+            Set `True` if a masking array is used for the magnetic field.
+            The mask must be created using the `generate_field_mask` method, which
+            sets the `self.fieldMask` array for the `Bz` field. Values
+            labeled as `False` are ignored.
         sigma_field_noise
             If a `float` is specified, a covariance matrix is produced and
             stored in the `covariance_matrix` variable. This matrix uses
@@ -473,7 +492,7 @@ class MultipoleInversion(object):
         if apply_field_mask:
             if self.verbose:
                 print('Using field mask from the self.fieldMask array. '
-                      'Confirm that you are using the right mask by calling the create_field_mask() method.')
+                      'Confirm that you are using the right mask by calling the generate_field_mask() method.')
             Qmatrix = self.Q[self.fieldMask.reshape(-1)]
             Bzdata = self.Bz_array[self.fieldMask.reshape(-1)]
         else:

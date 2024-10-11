@@ -140,7 +140,7 @@ def plot_inversion_Bz(ax,
 
     if apply_field_mask:
         inv_bz = mi.inv_Bz_array.copy()
-        inv_bz[mi.fieldMask] = float("nan")
+        inv_bz[~mi.fieldMask] = float("nan")
     else:
         inv_bz = mi.inv_Bz_array
 
