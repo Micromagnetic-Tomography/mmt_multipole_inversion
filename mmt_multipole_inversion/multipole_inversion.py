@@ -420,8 +420,8 @@ class MultipoleInversion(object):
             # x0 = np.ones(self.N_particles * self._N_cols)
             
             # Nelder-Mead working fine:
-            minResult = so.minimize(minF, x0, tol=1e-20, options=dict(maxiter=10, disp=True),
-                                    method='Nelder-Mead')
+            # minResult = so.minimize(minF, x0, tol=1e-20, options=dict(maxiter=10, disp=True),
+            #                         method='Nelder-Mead')
 
             # CG or gradient-dependent method have problems with jacobian calculation:
             minResult = so.minimize(minF, minResult.x, tol=1e-25, jac='cs', # options=dict(gtol=1e-25, xrtol=1e-20, disp=True),
@@ -463,11 +463,19 @@ class MultipoleInversion(object):
             # if self._expansion_limit == 'quadrupole':
             #     x0[3:] = 1e-18
 
+            # TODO: Update minimization tolerances and options
             # minResult = tmin.minimize(minF, x0, options=dict(xtol=1e-30, gtol=1e-25, line_search='strong-wolfe', disp=2), method='bfgs', disp=2)
             minResult = tmin.minimize(minF, x0, options=dict(xtol=1e-25, gtol=1e-25, line_search='strong-wolfe', normp=2, disp=2), method='l-bfgs', disp=2)
             # minResult = tmin.minimize(minF, x0, options=dict(gtol=1e-25, disp=2), method='cg', disp=2)
 
             self.inv_multipole_moments = minResult.x.numpy()
+            # Scale the magnetic moments back to meter units:
+            µm = 1e-6
+            self.inv_multipole_moments[:3] *= µm**3
+            if self.expansion_limit in ['quadrupole', 'octupole']:
+                self.inv_multipole_moments[3:8] *= µm**5
+            if self.expansion_limit in ['octupole']:
+                self.inv_multipole_moments[8:15] *= µm**7
             self.inv_multipole_moments.shape = (self.N_particles, self._N_cols)
 
             inv_Bz_array, _ = Bflux_residual_f(minResult.x, tBz.flatten(), self.N_sensors, self._N_cols, self.N_particles, tParticlePositions,

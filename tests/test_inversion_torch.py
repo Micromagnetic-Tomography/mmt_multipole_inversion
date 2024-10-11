@@ -39,7 +39,7 @@ def fw_model_fun(sensor_dx=1e-6, sensor_dy=1e-6, overwrite=False,
     # Manually set the positions and magnetization of the two dipoles
     dipole_positions = np.array([[sample.Lx * 0.5,
                                   sample.Ly * 0.5,
-                                  -sample.Lz * 0.5]])
+                                  -sample.Lz * 0.05]])
 
     Ms = 1e5
     orientation = np.array([1., 0., 1.])
@@ -72,6 +72,7 @@ def test_inversion_single_dipole_torch(limit):
         expansion_limit=limit,
         sus_functions_module='spherical_harmonics_basis')
     inv_model.generate_measurement_mesh()
+    # inv_model.compute_inversion(method='torchmin')
     inv_model.compute_inversion(method='torchmin')
     print(inv_model.Q)
 
@@ -98,8 +99,11 @@ def test_inversion_single_dipole_torch(limit):
     print(inv_model.inv_Bz_array.flatten()[:10])
     print(inv_model.Bz_array.flatten()[:10])
     f, axs = plt.subplots(ncols=2)
-    axs[0].imshow(inv_model.inv_Bz_array, origin='lower', cmap='RdYlBu')
-    axs[1].imshow(inv_model.Bz_array, origin='lower', cmap='RdYlBu')
+    lim = 1.7e-3 * 1e9
+    print('LIMS', np.min(inv_model.Bz_array), np.max(inv_model.Bz_array))
+    axs[0].imshow(inv_model.inv_Bz_array, origin='lower', cmap='RdYlBu', vmin=-lim, vmax=lim)
+    axs[1].imshow(inv_model.Bz_array * 1e9, origin='lower', cmap='RdYlBu', vmin=-lim, vmax=lim)
+    axs[1].set_title('Original')
     plt.show()
 
 
@@ -107,4 +111,4 @@ if __name__ == '__main__':
     fw_model_fun(overwrite=True)
 
     # test_inversion_single_dipole_torch(limit='dipole')
-    test_inversion_single_dipole_torch(limit='quadrupole')
+    test_inversion_single_dipole_torch(limit='octupole')
