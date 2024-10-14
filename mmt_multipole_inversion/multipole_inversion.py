@@ -239,6 +239,12 @@ class MultipoleInversion(object):
 
         self.N_sensors = self.Nx_surf * self.Ny_surf
 
+        # TODO: Check the memory usage by saving the scan positions matrix 
+        self.scan_positions = np.ones((self.N_sensors, 3))
+        X_pos, Y_pos = np.meshgrid(self.Sx_range, self.Sy_range)
+        self.scan_positions[:, :2] = np.stack((X_pos, Y_pos), axis=2).reshape(-1, 2)
+        self.scan_positions[:, 2] *= self.Hz
+
     def generate_forward_matrix(self, optimization: _MethodOptions = 'numba'):
         """
         Generate the forward matrix adding the field contribution from all
@@ -272,11 +278,6 @@ class MultipoleInversion(object):
         # print('pos array:', particle_positions.shape)
         t0 = time.time()
 
-        # Create all the positions of the scan grid
-        scan_positions = np.ones((self.N_sensors, 3))
-        X_pos, Y_pos = np.meshgrid(self.Sx_range, self.Sy_range)
-        scan_positions[:, :2] = np.stack((X_pos, Y_pos), axis=2).reshape(-1, 2)
-        scan_positions[:, 2] *= self.Hz
         mp_order = {'dipole': 1, 'quadrupole': 2, 'octupole': 3}
 
         if optimization == 'cuda':
@@ -285,7 +286,7 @@ class MultipoleInversion(object):
                     raise RuntimeError('The cuda method is not available. Stopping calculation')
 
                 sus_cudalib.SHB_populate_matrix(self.particle_positions,
-                                                scan_positions,
+                                                self.scan_positions,
                                                 self.Q,
                                                 self.N_particles, self.N_sensors,
                                                 mp_order[self.expansion_limit],
@@ -297,15 +298,15 @@ class MultipoleInversion(object):
         # using the numba-optimised susceptibility functions
         elif optimization == 'numba':
             if len(self.sensor_dims) == 0:
-                self.sus_mod.dipole_Bz_sus(self.particle_positions, scan_positions,
+                self.sus_mod.dipole_Bz_sus(self.particle_positions, self.scan_positions,
                                            self.Q, self._N_cols)
                 if self.expansion_limit in ['quadrupole', 'octupole']:
                     self.sus_mod.quadrupole_Bz_sus(self.particle_positions,
-                                                   scan_positions,
+                                                   self.scan_positions,
                                                    self.Q, self._N_cols)
                 if self.expansion_limit in ['octupole']:
                     self.sus_mod.octupole_Bz_sus(self.particle_positions,
-                                                 scan_positions,
+                                                 self.scan_positions,
                                                  self.Q, self._N_cols)
 
             # AREA SENSOR
@@ -313,7 +314,7 @@ class MultipoleInversion(object):
                 if self._expansion_limit == 'octupole':
                     self.Q = np.empty(0)
                     raise ValueError('Octupole expansion_limit for area sensors not implemented')
-                self.sus_mod.multipole_Bz_sus(self.particle_positions, scan_positions,
+                self.sus_mod.multipole_Bz_sus(self.particle_positions, self.scan_positions,
                                               self.Q, self._N_cols,
                                               *self.sensor_dims,
                                               mp_order[self.expansion_limit]
@@ -327,7 +328,7 @@ class MultipoleInversion(object):
                 if self._expansion_limit == 'octupole':
                     self.Q = np.empty(0)
                     raise ValueError('Octupole expansion_limit for volume sensors not implemented')
-                self.sus_mod.multipole_Bz_sus(self.particle_positions, scan_positions,
+                self.sus_mod.multipole_Bz_sus(self.particle_positions, self.scan_positions,
                                               self.Q, self._N_cols,
                                               *self.sensor_dims,
                                               mp_order[self.expansion_limit]
@@ -362,27 +363,19 @@ class MultipoleInversion(object):
             data that is filtered/removed.
         """
 
-        # TODO: this should go in the generate_measurement_mesh method
-        # Create all the positions of the scan grid
-        scan_positions = np.ones((self.N_sensors, 3))
-        X_pos, Y_pos = np.meshgrid(self.Sx_range, self.Sy_range)
-        scan_positions[:, :2] = np.stack((X_pos, Y_pos), axis=2).reshape(-1, 2)
-        scan_positions[:, 2] *= self.Hz
-
         # Function of 2 variables (scanning field plane): x,y
         if callable(fieldMaskTool):
             self.fieldMask.shape = (-1)
-            for i, r in enumerate(scan_positions[:, :2]):
+            for i, r in enumerate(self.scan_positions[:, :2]):
                 self.fieldMask[i] = fieldMaskTool(r)
             self.fieldMask.shape = (self.Sy_range.shape[0], -1)
         # Numpy array:
         elif isinstance(fieldMaskTool, np.ndarray):
-            # Check that shapes are the same
+            # Check that shapes are the same; np also checks that it can copy correctly
             if not (fieldMaskTool.shape[0] == self.fieldMask.shape[0]
                     and fieldMaskTool.shape[1] == self.fieldMask.shape[1]):
-                # TODO: search for the right exception
-                raise Exception('Array fieldMaskTool does not match Bz array'
-                                f' with shape {self.fieldMask.shape[0]} x {self.fieldMask.shape[1]}')
+                raise ValueError('Array fieldMaskTool does not match Bz array'
+                                 f' with shape {self.fieldMask.shape[0]} x {self.fieldMask.shape[1]}')
             else:
                 self.fieldMask[:] = fieldMaskTool
         elif isinstance(fieldMaskTool, (str, Path)):
@@ -421,7 +414,7 @@ class MultipoleInversion(object):
                 # indexing='ij' (matrix order), so the row coordinate increases first. To fit the image, we have
                 # to transpose the image array
                 interp = si.RegularGridInterpolator((im_xrange, im_yrange), im_arr.T, method='nearest') 
-                idata = interp(scan_positions[:, [0, 1]])
+                idata = interp(self.scan_positions[:, [0, 1]])
                 # Reshape to recover the mask with Cartesian axes coordinates
                 self.fieldMask[:] = idata.reshape(self.Sy_range.shape[0], -1)
 
@@ -456,10 +449,10 @@ class MultipoleInversion(object):
                 sp_pinv  -> Scipy's pinv (not recommended -> memory issues)
                 sp_pinv2 -> Scipy's pinv2 (this will call sp_pinv instead)
         apply_field_mask
-            Set `True` if a masking array is used for the magnetic field.
-            The mask must be created using the `generate_field_mask` method, which
-            sets the `self.fieldMask` array for the `Bz` field. Values
-            labeled as `False` are ignored.
+            Set `True` if a masking array is used for the magnetic field. The
+            mask must be created using the `generate_field_mask` method, which
+            sets the `self.fieldMask` array for the `Bz` field. Values labeled
+            as `False` are ignored.
         sigma_field_noise
             If a `float` is specified, a covariance matrix is produced and
             stored in the `covariance_matrix` variable. This matrix uses
