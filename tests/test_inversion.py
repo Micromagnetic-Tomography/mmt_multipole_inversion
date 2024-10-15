@@ -272,7 +272,7 @@ def test_inversion_single_dipole_with_image_mask_numba(limit):
         expansion_limit=limit,
         sus_functions_module='spherical_harmonics_basis')
     inv_model.generate_measurement_mesh()
-    inv_model.create_field_mask(fieldMaskTool='masks/maskTestDipole.png')
+    inv_model.generate_field_mask(fieldMaskTool='masks/maskTestDipole.png')
     inv_model.compute_inversion(apply_field_mask=True)
 
     Ms = 1e5
@@ -330,7 +330,7 @@ def test_inversion_single_dipole_with_field_mask_numba(limit):
         else:
             return True
 
-    inv_model.create_field_mask(fieldMaskTool=my_mask)
+    inv_model.generate_field_mask(fieldMaskTool=my_mask)
     inv_model.compute_inversion(apply_field_mask=True)
 
     Ms = 1e5
@@ -364,7 +364,7 @@ def test_inversion_single_dipole_with_field_mask_numba(limit):
     plt.close()
 
 if __name__ == '__main__':
-    fw_model_fun(overwrite=True)
+    # fw_model_fun(overwrite=True)
 
     # test_inversion_single_dipole_numba(limit='dipole')
     # test_inversion_single_dipole_numba(limit='quadrupole')
@@ -376,7 +376,7 @@ if __name__ == '__main__':
     # test_inversion_single_dipole_cuda(limit='quadrupole')
     # test_inversion_single_dipole(limit='octupole')
 
-    # test_inversion_single_dipole_numba(limit='quadrupole')
+    test_inversion_single_dipole_numba(limit='quadrupole')
     # test_inversion_single_dipole_numba_sensor_3D('quadrupole')
     # test_inversion_single_dipole_numba_sensor_2D('quadrupole')
 
