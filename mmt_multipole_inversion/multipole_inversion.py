@@ -19,7 +19,7 @@ try:
 except ImportError:
     HASCUDA = False
 
-# Suscept modules using Numba:
+# Suscept modules:
 from . import susceptibility_modules as sus_mods
 
 from typing import Optional
@@ -31,6 +31,10 @@ from . import plot_tools as pt
 # For the mask using image:
 import PIL
 import scipy.interpolate as si
+
+import logging
+# Notice this will inherit the params of the root looger in __init__
+LOGGER = logging.getLogger(__name__)
 
 # -----------------------------------------------------------------------------
 
@@ -60,7 +64,6 @@ class MultipoleInversion(object):
                  sample_config_file: Union[str, Path],
                  sample_arrays: Optional[Union[str, Path]],  # TODO: set to npz file
                  expansion_limit: _ExpOptions = 'quadrupole',
-                 verbose: bool = True,
                  sus_functions_module: _SusOptions = 'spherical_harmonics_basis'
                  ) -> None:
         """
@@ -95,8 +98,6 @@ class MultipoleInversion(object):
             Higher order multipole term to compute the field contribution from
             the potential of the magnetic particles. Options:
                 `dipole`, `quadrupole`, `octupole`
-        verbose
-            Print extra information about the calculations.
         sus_functions_module
             Spherical harmonic basis for the susceptibility matrix used for the
             multipole inversion. The fully orthogonal and linearly independent
@@ -129,10 +130,6 @@ class MultipoleInversion(object):
         self._expansion_limit = 'dipole'  # set default value
         self.expansion_limit = expansion_limit  # update def value
 
-        # Turn log messages on/off. TODO: Wrap print into a function to avoid
-        # multiple if statements
-        self.verbose = verbose
-
         expected_arrays = ['Bz_array', 'particle_positions']
         self.Bz_array = np.empty(0)
         self.particle_positions = None
@@ -145,13 +142,13 @@ class MultipoleInversion(object):
 
             for key in expected_arrays:
                 if key not in data.keys():
-                    if self.verbose:
-                        print(f'*{key}* array required for calculations. '
-                              ' Set manually.')
+                    LOGGER.info(f'*{key}* array required for calculations. Set manually.')
 
         # Optional sequence to set the origin of scan positions
         # self.scan_origin = (0.0, 0.0)
 
+        # TODO: Wrap all key dict analysis in function??
+        #
         # Load metadata
         with open(sample_config_file, 'r') as f:
             metadict = json.load(f)
@@ -179,16 +176,16 @@ class MultipoleInversion(object):
             else:
                 setattr(self, v, metadict.get(k))
 
-            if self.verbose:
-                if k not in metadict.keys():
-                    print(f'Parameter {k} not found in json file')
-                    if isinstance(v, tuple):
-                        print(f'Setting {k} value to {v[1]}')
+            if k not in metadict.keys():
+                LOGGER.info(f'Parameter {k} not found in json file')
+                # For dict keys in multInVDict that have a default value: inform use of def value
+                if isinstance(v, tuple):
+                    LOGGER.info(f'Setting {k} value to {v[1]}')
 
         for k in metadict.keys():
-            if self.verbose:
-                if k not in multInVDict.keys():
-                    print(f'Not using parameter {k} in json file')
+            if k not in multInVDict.keys():
+                print(f'Not using parameter {k} in json file')
+                LOGGER.info(f'Not using parameter {k} in json file')
 
         self.generate_measurement_mesh()
 
@@ -232,10 +229,9 @@ class MultipoleInversion(object):
         self.Nx_surf = len(self.Sx_range)
         self.Ny_surf = len(self.Sy_range)
 
-        if self.verbose:
-            print('Scanning array sizes (row x col)')
-            print(f'Computed Sx x Sy sizes  : {len(self.Sy_range)} x {len(self.Sx_range)}')
-            print(f'Bz data matrix size     : {self.Bz_array.shape[0]} x {self.Bz_array.shape[1]}')
+        LOGGER.info('Scanning array sizes (row x col)')
+        LOGGER.info(f'Computed Sx x Sy sizes  : {len(self.Sy_range)} x {len(self.Sx_range)}')
+        LOGGER.info(f'Bz data matrix size     : {self.Bz_array.shape[0]} x {self.Bz_array.shape[1]}')
 
         self.N_sensors = self.Nx_surf * self.Ny_surf
 
@@ -285,12 +281,14 @@ class MultipoleInversion(object):
                 if HASCUDA is False:
                     raise RuntimeError('The cuda method is not available. Stopping calculation')
 
+                # TODO: CHECK
+                verb = 1 if LOGGER.level == 20 else 0
                 sus_cudalib.SHB_populate_matrix(self.particle_positions,
                                                 self.scan_positions,
                                                 self.Q,
                                                 self.N_particles, self.N_sensors,
                                                 mp_order[self.expansion_limit],
-                                                self.verbose)
+                                                verb)
 
         # For all the particles, whose positions are stored in the pos array
         # (N_particles x 3), compute the dipole (3 terms), quadrupole (5 terms)
@@ -342,8 +340,7 @@ class MultipoleInversion(object):
             raise ValueError(f'Optimization {optimization} not valid')
 
         t1 = time.time()
-        if self.verbose:
-            print(f'Generation of Q matrix took: {t1 - t0:.4f} s')
+        LOGGER.info(f'Generation of Q matrix took: {t1 - t0:.4f} s')
         # print('Q shape:', Q.shape)
 
 
@@ -394,8 +391,7 @@ class MultipoleInversion(object):
 
             if not ((im_arr.shape[0] == self.fieldMask.shape[0]) and 
                     (im_arr.shape[1] == self.fieldMask.shape[1])):
-                if self.verbose:
-                    print('Interpolating image into mask')
+                LOGGER.info('Interpolating image into mask')
 
                 # NOTE: the xrange is discretized bythe number of columns
                 im_xrange = np.linspace(self.Sx_range[0], self.Sx_range[-1], im_arr.shape[1])
@@ -419,8 +415,7 @@ class MultipoleInversion(object):
                 self.fieldMask[:] = idata.reshape(self.Sy_range.shape[0], -1)
 
             else:
-                if self.verbose:
-                    print('Using the specified image with original resolution')
+                LOGGER.info('Using the specified image with original resolution')
                 self.fieldMask[:] = im_arr
 
         # Expect that the array only contain 0s and 1s
@@ -469,8 +464,7 @@ class MultipoleInversion(object):
             detailed information.
         """
         if self.Q.size == 0:
-            if self.verbose:
-                print('Generating forward matrix')
+            LOGGER.info('Generating forward matrix')
             self.generate_forward_matrix()
 
         #idx = np.arange(len(self.Q))
@@ -483,9 +477,8 @@ class MultipoleInversion(object):
         # NOTE: This reshape of Bz_array assumes it is using C order in memory (default in np)
         self.Bz_array.shape = (self.N_sensors,)  # Can also use -1
         if apply_field_mask:
-            if self.verbose:
-                print('Using field mask from the self.fieldMask array. '
-                      'Confirm that you are using the right mask by calling the generate_field_mask() method.')
+            LOGGER.info('Using field mask from the self.fieldMask array. '
+                        'Confirm that you are using the right mask by calling the generate_field_mask() method.')
             Qmatrix = self.Q[self.fieldMask.reshape(-1)]
             Bzdata = self.Bz_array[self.fieldMask.reshape(-1)]
         else:
@@ -493,12 +486,10 @@ class MultipoleInversion(object):
             Bzdata = self.Bz_array
 
         if method == 'np_pinv':
-            if self.verbose:
-                print('Using numpy.pinv for inversion')
+            LOGGER.info('Using numpy.pinv for inversion')
             self.IQ = np.linalg.pinv(Qmatrix, **method_kwargs)
         elif method == 'sp_pinv' or method == 'sp_pinv2':
-            if self.verbose:
-                print('Using scipy.linalg.pinv for inversion')
+            LOGGER.info('Using scipy.linalg.pinv for inversion')
             self.IQ = slin.pinv(Qmatrix, **method_kwargs)
         # elif method == 'tf_pinv':
         #     if self.verbose:
