@@ -73,7 +73,7 @@ def test_inversion_single_dipole_torch(limit):
         sus_functions_module='spherical_harmonics_basis')
     inv_model.generate_measurement_mesh()
     # inv_model.compute_inversion(method='torchmin')
-    inv_model.compute_inversion(method='torchmin')
+    inv_model.compute_inversion(method='minimize_bfgs')
     print(inv_model.Q)
 
     Ms = 1e5
@@ -111,4 +111,5 @@ if __name__ == '__main__':
     fw_model_fun(overwrite=True)
 
     # test_inversion_single_dipole_torch(limit='dipole')
-    test_inversion_single_dipole_torch(limit='octupole')
+    test_inversion_single_dipole_torch(limit='quadrupole')
+    # test_inversion_single_dipole_torch(limit='octupole')

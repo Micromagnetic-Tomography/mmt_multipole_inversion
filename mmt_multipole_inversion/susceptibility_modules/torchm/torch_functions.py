@@ -59,9 +59,7 @@ def octupole_Bz_sus(xin, N_sensors, N_particles,
         g = 1e-7 / (r4 * r4 * r)
 
         # Fill the Q array using n_col_stride = 8
-        yout[i] += nT * torch.dot(g * (3 * (r2 ** 2) - 30 * r2 * z2
-                               + 35 * (z2 * z2)) / np.sqrt(10),
-                          xin[8::n_col_stride])
+        yout[i] += nT * torch.dot(g * (3 * (r2 ** 2) - 30 * r2 * z2 + 35 * (z2 * z2)) / np.sqrt(10), xin[8::n_col_stride])
         yout[i] += nT * torch.dot(g * np.sqrt(15) * x * z * (-3 * r2 + 7 * z2) / 2, xin[9::n_col_stride])
         yout[i] += nT * torch.dot(g * np.sqrt(15) * y * z * (-3 * r2 + 7 * z2) / 2, xin[10::n_col_stride])
         yout[i] += nT * torch.dot(g * -np.sqrt(1.5) * (x2 - y2) * (r2 - 7 * z2), xin[11::n_col_stride])

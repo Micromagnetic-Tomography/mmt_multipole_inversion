@@ -403,8 +403,9 @@ class MultipoleInversion(object):
             # tParticlePositions = torch.from_numpy(self.particle_positions)
             # tScanPositions = torch.from_numpy(scan_positions)
             def minF(x):
-                return spm_Bflux_residual_f(x, self.Bz_array.flatten(), self.N_sensors, self._N_cols, self.N_particles, self.particle_positions,
-                                            self.expansion_limit, scan_positions, engine='numba')
+                return spm_Bflux_residual_f(x, self.Bz_array.flatten(), self.N_sensors, self._N_cols,
+                                            self.N_particles, self.particle_positions, self.expansion_limit,
+                                            scan_positions, engine='numba')
 
             # Random init state:
             # x0 = (2 * np.random.rand(self.N_particles * self._N_cols) - 1.).reshape(-1, self._N_cols)
@@ -414,20 +415,25 @@ class MultipoleInversion(object):
             # x0.shape = (-1)
 
             # Uniform init state:
-            x0 = 1e-13 * np.ones(self.N_particles * self._N_cols)
-            if self._expansion_limit == 'quadrupole':
-                x0[3:] *= 1e-6
+            # x0 = 1e-12 * np.ones(self.N_particles * self._N_cols)
+            # if self._expansion_limit == 'quadrupole':
+            #     x0[3:] *= 1e-6
             # x0 = np.ones(self.N_particles * self._N_cols)
+            x0 = (2 * np.random.rand(self.N_particles * self._N_cols) - 1.).reshape(-1, self._N_cols)
+            x0[:, :3] /= np.linalg.norm(x0[:, :3], axis=1)
+            x0 *= 1e-12
+            x0[:, 3:] = 1e-18
+            x0.shape = (-1)
             
             # Nelder-Mead working fine:
-            # minResult = so.minimize(minF, x0, tol=1e-20, options=dict(maxiter=10, disp=True),
+            # minResult = so.minimize(minF, x0, tol=1e-20, options=dict(maxiter=40, disp=True),
             #                         method='Nelder-Mead')
 
             # CG or gradient-dependent method have problems with jacobian calculation:
-            minResult = so.minimize(minF, minResult.x, tol=1e-25, jac='cs', # options=dict(gtol=1e-25, xrtol=1e-20, disp=True),
-                                    options=dict(disp=True),
+            minResult = so.minimize(minF, x0, tol=1e-25, jac='cs', # options=dict(gtol=1e-25, xrtol=1e-20, disp=True),
+                                    options=dict(gtol=1e-6, disp=True),
                                     # options=dict(xtol=1e-25, gtol=1e-25, line_search='strong-wolfe', normp=2, disp=2),
-                                    method='CG')
+                                    method='BFGS')
             # minResult = tmin.minimize(minF, x0, options=dict(gtol=1e-25, disp=2), method='cg', disp=2)
 
             self.inv_multipole_moments = np.array(minResult.x)
