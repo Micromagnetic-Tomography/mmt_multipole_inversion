@@ -48,7 +48,7 @@ _SusOptions = Literal['spherical_harmonics_basis',
                       ]
 _ExpOptions = Literal['dipole', 'quadrupole', 'octupole']
 _MethodOptions = Literal['numba', 'cuda']
-_InvMethodOps = Literal['np_pinv', 'sp_pinv', 'sp_pinv2', 'pylops']
+_InvMethodOps = Literal['np_pinv', 'sp_pinv', 'sp_pinv2', 'pylops', 'torchmin', 'minimize_bfgs']
 
 
 # TODO: verbose should be more useful for debugging
@@ -471,22 +471,27 @@ class MultipoleInversion(object):
 
             # TODO: Update minimization tolerances and options
             # minResult = tmin.minimize(minF, x0, options=dict(xtol=1e-30, gtol=1e-25, line_search='strong-wolfe', disp=2), method='bfgs', disp=2)
-            minResult = tmin.minimize(minF, x0, options=dict(xtol=1e-25, gtol=1e-25, line_search='strong-wolfe', normp=2, disp=2), method='l-bfgs', disp=2)
+            minResult = tmin.minimize(minF, x0, options=dict(xtol=1e-2, gtol=1e-2, line_search='strong-wolfe', normp=2, disp=2),
+                                      method='l-bfgs', disp=2)
             # minResult = tmin.minimize(minF, x0, options=dict(gtol=1e-25, disp=2), method='cg', disp=2)
 
             self.inv_multipole_moments = minResult.x.numpy()
+            print('MMOMENTS', self.inv_multipole_moments)
             # Scale the magnetic moments back to meter units:
             µm = 1e-6
-            self.inv_multipole_moments[:3] *= µm**3
-            if self.expansion_limit in ['quadrupole', 'octupole']:
-                self.inv_multipole_moments[3:8] *= µm**5
-            if self.expansion_limit in ['octupole']:
-                self.inv_multipole_moments[8:15] *= µm**7
             self.inv_multipole_moments.shape = (self.N_particles, self._N_cols)
+            self.inv_multipole_moments[:, :3] *= µm**3
+            if self.expansion_limit in ['quadrupole', 'octupole']:
+                self.inv_multipole_moments[:, 3:8] *= µm**4
+            if self.expansion_limit in ['octupole']:
+                self.inv_multipole_moments[:, 8:15] *= µm**5
 
             inv_Bz_array, _ = Bflux_residual_f(minResult.x, tBz.flatten(), self.N_sensors, self._N_cols, self.N_particles, tParticlePositions,
                                                self.expansion_limit, tScanPositions, engine='numba', full_output=True)
-            self.inv_Bz_array = inv_Bz_array.numpy()
+            self.inv_Bz_array = inv_Bz_array.numpy() * 1e9
+            print('INV BZ MAX')
+            print(self.inv_Bz_array.min())
+            print(self.inv_Bz_array.max())
             self.inv_Bz_array.shape = (self.Ny_surf, -1)
 
         else:
