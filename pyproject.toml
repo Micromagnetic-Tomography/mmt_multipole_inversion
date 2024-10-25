@@ -21,20 +21,20 @@ generate-setup-file = false
 script = "build_extension.py"
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.12"
+python = ">=3.10,<3.13"
 numpy = ">=1.23"
 scipy = "^1.7.0"
 matplotlib = "^3.2"
 numba = ">=0.56"
-Cython = "^0.29.30"
+Cython = ">=3.0.0"
 
 [tool.poetry.group.dev.dependencies]
-jupyter = "^1.0.0"
+jupyter = "^1.1.0"
 pytest = "^7.1.2"
 requests = "^2.28.1"
-Shapely = "^1.8.4"
+Shapely = "^2.0.0"
 jupytext = "^1.14.1"
 
 [build-system]
-requires = ["setuptools", "poetry-core>=1.1.14", "cython>0.29", "numpy>=1.23"]
+requires = ["setuptools", "poetry-core>=1.8.0", "cython>=3.0.0", "numpy>=1.23"]
 build-backend = "poetry.core.masonry.api"
