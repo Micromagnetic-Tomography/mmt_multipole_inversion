@@ -460,7 +460,7 @@ class MultipoleInversion(object):
             # Random init state:
             x0 = (2 * np.random.rand(self.N_particles * self._N_cols) - 1.).reshape(-1, self._N_cols)
             x0[:, :3] /= np.linalg.norm(x0[:, :3], axis=1)
-            x0 *= 1e-12
+            x0 *= 1e-4
             x0[:, 3:] = 1e-18
             x0.shape = (-1)
 
@@ -482,9 +482,9 @@ class MultipoleInversion(object):
             self.inv_multipole_moments.shape = (self.N_particles, self._N_cols)
             self.inv_multipole_moments[:, :3] *= µm**3
             if self.expansion_limit in ['quadrupole', 'octupole']:
-                self.inv_multipole_moments[:, 3:8] *= µm**4
+                self.inv_multipole_moments[:, 3:8] *= µm**5
             if self.expansion_limit in ['octupole']:
-                self.inv_multipole_moments[:, 8:15] *= µm**5
+                self.inv_multipole_moments[:, 8:15] *= µm**7
 
             inv_Bz_array, _ = Bflux_residual_f(minResult.x, tBz.flatten(), self.N_sensors, self._N_cols, self.N_particles, tParticlePositions,
                                                self.expansion_limit, tScanPositions, engine='numba', full_output=True)

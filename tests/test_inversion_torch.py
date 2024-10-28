@@ -102,10 +102,10 @@ def test_inversion_single_dipole_torch(limit):
     print(inv_model.inv_Bz_array.flatten()[:10])
     print(inv_model.Bz_array.flatten()[:10])
     f, axs = plt.subplots(ncols=2)
-    lim = 1.7e-3 * 1e9
+    lim = 1.7e-3
     print("LIMS", np.min(inv_model.Bz_array), np.max(inv_model.Bz_array))
     axs[0].imshow(inv_model.inv_Bz_array, origin="lower", cmap="RdYlBu", vmin=-lim, vmax=lim)
-    axs[1].imshow(inv_model.Bz_array * 1e9, origin="lower", cmap="RdYlBu", vmin=-lim, vmax=lim)
+    axs[1].imshow(inv_model.Bz_array, origin="lower", cmap="RdYlBu", vmin=-lim, vmax=lim)
     axs[1].set_title("Original")
     plt.show()
 

@@ -6,6 +6,16 @@ import torch
 # micrometers and nano Tesla units
 µm = 1e6
 nT = 1e9
+# NOTE: Every term in the multipole expansion of the magnetic potential must have
+#       units of Ampere A, so the magnetic moments must be scaled according to the
+#       spatial factor proportional to the corresponding moment:
+#       #
+#                        Spatial factor     Mag Moment Units
+#           Dipole:      1 / R^3            A * m^3
+#           Quadrupole:  1 / R^5            A * m^5
+#           Octupole:    1 / R^7            A * m^7
+#       #
+#       Also remember that the field is scaled by vacuum permeability ~ 4 pi 1e-7
 
 def dipole_Bz_sus(xin, N_sensors, N_particles, dip_r, pos_r, yout, n_col_stride):
     for i in range(N_sensors):
