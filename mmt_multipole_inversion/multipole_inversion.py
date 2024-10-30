@@ -411,39 +411,40 @@ class MultipoleInversion(object):
                                             scan_positions, engine='numba')
 
             # Random init state:
-            # x0 = (2 * np.random.rand(self.N_particles * self._N_cols) - 1.).reshape(-1, self._N_cols)
-            # x0[:, :3] /= np.linalg.norm(x0[:, :3], axis=1)
-            # x0 *= 1e-12
-            # x0[:, 3:] = 1e-18
-            # x0.shape = (-1)
-
-            # Uniform init state:
-            # x0 = 1e-12 * np.ones(self.N_particles * self._N_cols)
-            # if self._expansion_limit == 'quadrupole':
-            #     x0[3:] *= 1e-6
-            # x0 = np.ones(self.N_particles * self._N_cols)
-            x0 = (2 * np.random.rand(self.N_particles * self._N_cols) - 1.).reshape(-1, self._N_cols)
-            x0[:, :3] /= np.linalg.norm(x0[:, :3], axis=1)
-            x0 *= 1e-12
-            x0[:, 3:] = 1e-18
-            x0.shape = (-1)
+            if initial_moments is None:
+                rng = np.random.default_rng(42)
+                x0 = (2 * rng.random(self.N_particles * self._N_cols) - 1.).reshape(-1, self._N_cols)
+                x0[:, :3] /= np.linalg.norm(x0[:, :3], axis=1)
+                x0[:, :3] *= 1e4
+                if self.expansion_limit in ['quadrupole', 'octupole']:
+                    x0[:, 3:8] /= np.linalg.norm(x0[:, 3:8], axis=1)
+                    x0[:, 3:8] *= 1e-8
+                if self.expansion_limit in ['octupole']:
+                    x0[:, 8:15] /= np.linalg.norm(x0[:, 8:15], axis=1)
+                    x0[:, 8:15] *= 1e-22
+                x0.shape = (-1)
+            else:
+                x0 = initial_moments
             
             # Nelder-Mead working fine:
             # minResult = so.minimize(minF, x0, tol=1e-20, options=dict(maxiter=40, disp=True),
             #                         method='Nelder-Mead')
 
-            # CG or gradient-dependent method have problems with jacobian calculation:
-            minResult = so.minimize(minF, x0, tol=1e-25, jac='cs', # options=dict(gtol=1e-25, xrtol=1e-20, disp=True),
-                                    options=dict(gtol=1e-6, disp=True),
-                                    # options=dict(xtol=1e-25, gtol=1e-25, line_search='strong-wolfe', normp=2, disp=2),
-                                    method='BFGS')
+            # Use BFGS by default
+            if not method_kwargs:
+                method_kwargs = dict(method='BFGS', tol=1e-5, options=dict(gtol=1e-2, disp=True, xrtol=1e-2))
+            minResult = so.minimize(minF, x0, **method_kwargs)
             # minResult = tmin.minimize(minF, x0, options=dict(gtol=1e-25, disp=2), method='cg', disp=2)
 
             self.inv_multipole_moments = np.array(minResult.x)
             self.inv_multipole_moments.shape = (self.N_particles, self._N_cols)
 
-            self.inv_Bz_array, _ = spm_Bflux_residual_f(self.inv_multipole_moments.flatten(), self.Bz_array.flatten(), self.N_sensors, self._N_cols, self.N_particles, self.particle_positions,
+            self.inv_Bz_array, _ = spm_Bflux_residual_f(self.inv_multipole_moments.flatten(), self.Bz_array.flatten(), self.N_sensors,
+                                                        self._N_cols, self.N_particles, self.particle_positions,
                                                         self.expansion_limit, scan_positions, engine='numba', full_output=True)
+
+            # Back to Tesla units:
+            self.inv_Bz_array *= 1e-9
             self.inv_Bz_array.shape = (self.Ny_surf, -1)
 
         elif method == 'torchmin':

@@ -5,7 +5,7 @@ nT = 1e9
 
 def dipole_Bz_sus(xin, N_sensors, N_particles, dip_r, pos_r, yout, n_col_stride):
     for i in range(N_sensors):
-        dr = µm *(pos_r[i] - dip_r)
+        dr = µm * (pos_r[i] - dip_r)
         x, y, z = dr[:, 0], dr[:, 1], dr[:, 2]
         z2 = z ** 2
 
@@ -68,7 +68,7 @@ def Bflux_residual_f(xin, Bdata, N_sensors, N_cols, N_particles, particle_positi
                      expansion_limit, scan_positions, engine='numba', full_output=False):
 
     # x is input magnetic moment, output y data vector
-    yout = np.zeros(N_sensors)
+    yout = np.zeros(N_sensors).astype(np.float64)
     # loop through all scan points to calculate magnetic moment
     if engine == 'numba':
         # reshape the magnetic moment vector to order: [mx1 mx2 ... my1 my2 ... ]
@@ -82,7 +82,7 @@ def Bflux_residual_f(xin, Bdata, N_sensors, N_cols, N_particles, particle_positi
             octupole_Bz_sus(xin, N_sensors, N_particles, particle_positions, scan_positions, yout, N_cols)
 
     # the misfit functional that is minimised:
-    mf = np.sum((yout - nT * Bdata) ** 2)
+    mf = np.sum((yout - nT * Bdata) ** 2) / (N_sensors)
     # mf = np.linalg.norm((yout - Bdata).reshape(-1, N_sensors // 2), ord=1)
     # mf = np.max((yout - Bdata) ** 2)  # not efficient
 
