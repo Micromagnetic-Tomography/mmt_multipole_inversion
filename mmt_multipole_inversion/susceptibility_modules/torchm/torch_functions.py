@@ -41,10 +41,10 @@ def dipole_Bz_sus(xin, N_sensors, N_particles, dip_r, pos_r, yout, n_col_stride)
         z2 = z ** 2
 
         r2 = torch.sum(dr ** 2, dim=1)
-        r = np.sqrt(r2)
+        r = torch.sqrt(r2)
         f = 1e-7 / (r2 * r2 * r)
 
-        #  Only return Bz
+        # Only return Bz
         yout[i] += nT * torch.dot(f * (3 * x * z), xin[::n_col_stride])
         yout[i] += nT * torch.dot(f * (3 * y * z), xin[1::n_col_stride])
         yout[i] += nT * torch.dot(f * (3 * z2 - r2), xin[2::n_col_stride])
@@ -63,7 +63,7 @@ def quadrupole_Bz_sus(xin, N_sensors, N_particles, dip_r, pos_r, yout, n_col_str
 
         # r2 = torch.sum(dr ** 2, dim=1)
         r2 = x2 + y2 + z2
-        r = np.sqrt(r2)
+        r = torch.sqrt(r2)
         g = 1e-7 / (r2 * r2 * r2 * r)
         
         yout[i] += nT * torch.dot(g * np.sqrt(3 / 2) * z * (-3 * r2 + 5 * z2), xin[3::n_col_stride])
@@ -87,7 +87,7 @@ def octupole_Bz_sus(xin, N_sensors, N_particles, dip_r, pos_r, yout, n_col_strid
 
         r2 = torch.sum(dr ** 2, dim=1)
         r4 = r2 ** 2
-        r = np.sqrt(r2)
+        r = torch.sqrt(r2)
         g = 1e-7 / (r4 * r4 * r)
 
         # Fill the Q array using n_col_stride = 8
@@ -106,7 +106,8 @@ def Bflux_residual_f(xin, Bdata, N_sensors, N_cols, N_particles, particle_positi
                      expansion_limit, scan_positions, full_output=False):
 
     # xin is input magnetic moment. yout are the forward model measurement points
-    yout = torch.zeros(N_sensors)
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    yout = torch.zeros(N_sensors).to(device)
 
     dipole_Bz_sus(xin, N_sensors, N_particles, particle_positions, scan_positions, yout, N_cols)
     if expansion_limit in ['quadrupole', 'octupole']:

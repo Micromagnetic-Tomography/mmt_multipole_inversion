@@ -38,6 +38,7 @@ import torch
 import torchmin as tmin
 from .susceptibility_modules.torchm.torch_functions import Bflux_residual_f
 from .susceptibility_modules.scipym.spm_functions import Bflux_residual_f as spm_Bflux_residual_f
+import sys
 
 # -----------------------------------------------------------------------------
 
@@ -453,13 +454,16 @@ class MultipoleInversion(object):
             if self.verbose:
                 print('Using the pytorch minimize lib for an iterative inversion')
 
-            tBz = torch.from_numpy(self.Bz_array)
-            tParticlePositions = torch.from_numpy(self.particle_positions)
-            tScanPositions = torch.from_numpy(scan_positions)
+            device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+            tBz = torch.from_numpy(self.Bz_array).to(device)
+            tParticlePositions = torch.from_numpy(self.particle_positions).to(device)
+            tScanPositions = torch.from_numpy(scan_positions).to(device)
 
             def minF(x):
                 return Bflux_residual_f(x, tBz.flatten(), self.N_sensors, self._N_cols, self.N_particles,
                                         tParticlePositions, self.expansion_limit, tScanPositions)
+            print('CUDA Bz', tBz.is_cuda)
+            # sys.exit()
 
             # Random init state:
             if initial_moments is None:
@@ -477,6 +481,8 @@ class MultipoleInversion(object):
             else:
                 x0 = initial_moments
 
+            x00 = torch.from_numpy(x0).to(device)
+
             # Uniform init state:
             # x0 = 1e-12 * np.ones(self.N_particles * self._N_cols)
             # if self._expansion_limit == 'quadrupole':
@@ -486,27 +492,27 @@ class MultipoleInversion(object):
             if not method_kwargs:
                 method_kwargs = dict(options=dict(xtol=1e-2, gtol=1e-2, line_search='strong-wolfe', normp=2, disp=2),
                                      method='l-bfgs', disp=2)
-            minResult = tmin.minimize(minF, x0, **method_kwargs)
+            minResult = tmin.minimize(minF, x00, **method_kwargs)
             # minResult = tmin.minimize(minF, x0, options=dict(gtol=1e-25, disp=2), method='cg', disp=2)
 
-            self.inv_multipole_moments = minResult.x.numpy()
             # DEBUG:
             #   print('MMOMENTS', self.inv_multipole_moments)
 
+            # Note that we use the magnetic moments in scaled units and we obtain the field in nT
+            inv_Bz_array, _ = Bflux_residual_f(minResult.x, tBz.flatten(), self.N_sensors, self._N_cols, self.N_particles,
+                                               tParticlePositions, self.expansion_limit, tScanPositions, full_output=True)
+            # Back to Tesla units:
+            self.inv_Bz_array = inv_Bz_array.cpu().detach().numpy() * 1e-9
+
             # Scale the magnetic moments back to Ampere * meter^X units:
             µm = 1e-6
+            self.inv_multipole_moments = minResult.x.cpu().detach().numpy()
             self.inv_multipole_moments.shape = (self.N_particles, self._N_cols)
             self.inv_multipole_moments[:, :3] *= µm**3
             if self.expansion_limit in ['quadrupole', 'octupole']:
                 self.inv_multipole_moments[:, 3:8] *= µm**5
             if self.expansion_limit in ['octupole']:
                 self.inv_multipole_moments[:, 8:15] *= µm**7
-
-            # Note that we use the magnetic moments in scaled units and we obtain the field in nT
-            inv_Bz_array, _ = Bflux_residual_f(minResult.x, tBz.flatten(), self.N_sensors, self._N_cols, self.N_particles,
-                                               tParticlePositions, self.expansion_limit, tScanPositions, full_output=True)
-            # Back to Tesla units:
-            self.inv_Bz_array = inv_Bz_array.numpy() * 1e-9
 
             # DEBUG:
             # print('INV BZ MAX')
@@ -548,9 +554,7 @@ class MultipoleInversion(object):
             # print('mags:', mags.shape)
 
             # Forward field
-            self.inv_Bz_array = np.matmul(
-                self.Q, self.inv_multipole_moments.reshape(-1)
-                )
+            self.inv_Bz_array = np.matmul(self.Q, self.inv_multipole_moments.reshape(-1))
             self.inv_Bz_array.shape = (self.Ny_surf, -1)
 
             # Generate covariance matrix if sigma not none
