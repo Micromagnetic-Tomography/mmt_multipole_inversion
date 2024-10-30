@@ -2,22 +2,39 @@ import numpy as np
 import torch
 
 # NOTE: To make Torch minimization happy, using a larger scale for the field and
-# the space dimensions, we will scale position, locally in this file, Using
-# micrometers and nano Tesla units
+#       the space dimensions, we will scale position, locally in this file, Using
+#       micrometers and nano Tesla units
 µm = 1e6
 nT = 1e9
-# NOTE: Every term in the multipole expansion of the magnetic potential must have
-#       units of Ampere A, so the magnetic moments must be scaled according to the
-#       spatial factor proportional to the corresponding moment:
+# NOTE:
+#       The magnetic field H = -∇Φ  has units of A/m
+#       The field B = µ0 H, is scaled by vacuum permeability µ0 ~ 4 pi 1e-7
+#       #
+#       Every term in the multipole expansion of the magnetic potential Φ must have
+#       units of Ampere A, and the field A/m, so the magnetic moments (in the `xin` array)
+#       must be scaled to get field units:
 #       #
 #                        Spatial factor     Mag Moment Units
-#           Dipole:      1 / R^3            A * m^3
-#           Quadrupole:  1 / R^5            A * m^5
-#           Octupole:    1 / R^7            A * m^7
+#           Dipole:      1 / R^3            A * m^2
+#           Quadrupole:  1 / R^5            A * m^4
+#           Octupole:    1 / R^7            A * m^6
 #       #
-#       Also remember that the field is scaled by vacuum permeability ~ 4 pi 1e-7
+#       If we scale the spatial units to µm, an additional 10^6 factor must be added to
+#       the field expression, that originates from the gradient spatial scaling
+#       (so the dipole moment, for example, is in A*m^2 units). Unless we scale the µ0
+#       constant, the field would be in MT (mega Tesla) units.
+#       To set the field to units of nanoTesla, we should multiply the field expression by
+#       a 10^15 factor.
+#       #
+#       A better approach, here, is to scale the dipole and higher moments in units of  µA * µm^X
+#       so we get an additional 10^6 term that cancels out with the scaling factors of the 1/R terms
+#       Then, to get the field in nT, we multiply by a 10^9 factor.
+#       This way, the dipole moment is in units of (µA * µm^2).
 
 def dipole_Bz_sus(xin, N_sensors, N_particles, dip_r, pos_r, yout, n_col_stride):
+    """
+    Dipole moments `xin` are in units of (µA * µm^2)
+    """
     for i in range(N_sensors):
         dr = µm *(pos_r[i] - dip_r)
         x, y, z = dr[:, 0], dr[:, 1], dr[:, 2]
@@ -36,6 +53,9 @@ def dipole_Bz_sus(xin, N_sensors, N_particles, dip_r, pos_r, yout, n_col_stride)
 
 
 def quadrupole_Bz_sus(xin, N_sensors, N_particles, dip_r, pos_r, yout, n_col_stride):
+    """
+    Quadrupole moments `xin` are in units of (µA * µm^4)
+    """
     for i in range(N_sensors):
         dr = µm * (pos_r[i] - dip_r)
         x, y, z = dr[:, 0], dr[:, 1], dr[:, 2]
@@ -56,8 +76,10 @@ def quadrupole_Bz_sus(xin, N_sensors, N_particles, dip_r, pos_r, yout, n_col_str
 
 
 # TODO: UPDATE to strides
-def octupole_Bz_sus(xin, N_sensors, N_particles,
-                    dip_r, pos_r, yout, n_col_stride):
+def octupole_Bz_sus(xin, N_sensors, N_particles, dip_r, pos_r, yout, n_col_stride):
+    """
+    Octupole moments `xin` are in units of (µA * µm^4)
+    """
     for i in range(N_sensors):
         dr = µm * (pos_r[i] - dip_r)
         x, y, z = dr[:, 0], dr[:, 1], dr[:, 2]
@@ -81,30 +103,23 @@ def octupole_Bz_sus(xin, N_sensors, N_particles,
 
 
 def Bflux_residual_f(xin, Bdata, N_sensors, N_cols, N_particles, particle_positions,
-                     expansion_limit, scan_positions, engine='numba', full_output=False):
+                     expansion_limit, scan_positions, full_output=False):
 
-    # x is input magnetic moment, output y data vector
+    # xin is input magnetic moment. yout are the forward model measurement points
     yout = torch.zeros(N_sensors)
-    # loop through all scan points to calculate magnetic moment
-    if engine == 'numba':
-        # reshape the magnetic moment vector to order: [mx1 mx2 ... my1 my2 ... ]
-        # so Numba can use the dot product more efficiently
-        # xin = xin.reshape(N_particles, N_cols).T.flatten()
 
-        dipole_Bz_sus(xin, N_sensors, N_particles, particle_positions, scan_positions, yout, N_cols)
-        if expansion_limit in ['quadrupole', 'octupole']:
-            quadrupole_Bz_sus(xin, N_sensors, N_particles, particle_positions, scan_positions, yout, N_cols)
-        if expansion_limit in ['octupole']:
-            octupole_Bz_sus(xin, N_sensors, N_particles, particle_positions, scan_positions, yout, N_cols)
+    dipole_Bz_sus(xin, N_sensors, N_particles, particle_positions, scan_positions, yout, N_cols)
+    if expansion_limit in ['quadrupole', 'octupole']:
+        quadrupole_Bz_sus(xin, N_sensors, N_particles, particle_positions, scan_positions, yout, N_cols)
+    if expansion_limit in ['octupole']:
+        octupole_Bz_sus(xin, N_sensors, N_particles, particle_positions, scan_positions, yout, N_cols)
 
-    # The misfit functional that is minimised in Tesla units
-    mf = torch.sum((yout - nT * Bdata) ** 2)
+    # The misfit functional that is minimised in Tesla units. Scale by number of measurement points
+    mf = torch.sum((yout - nT * Bdata) ** 2) / (N_sensors)
 
     # Using torch's norm:
     # mf = torch.norm(yout - Bdata, p=torch.inf)
 
-    # print(f'{mf=}')
-    # mf = torch.max(torch.abs((yout - Bdata)))
     if full_output:
         return yout, mf
     else:
