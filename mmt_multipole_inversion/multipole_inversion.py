@@ -49,7 +49,6 @@ _MethodOptions = Literal['numba', 'cuda']
 _InvMethodOps = Literal['np_pinv', 'sp_pinv', 'sp_pinv2']
 
 
-# TODO: verbose should be more useful for debugging
 class MultipoleInversion(object):
     """Class to perform multipole inversions
 
@@ -230,8 +229,9 @@ class MultipoleInversion(object):
         self.Ny_surf = len(self.Sy_range)
 
         LOGGER.info('Scanning array sizes (row x col)')
-        LOGGER.info(f'Computed Sx x Sy sizes  : {len(self.Sy_range)} x {len(self.Sx_range)}')
-        LOGGER.info(f'Bz data matrix size     : {self.Bz_array.shape[0]} x {self.Bz_array.shape[1]}')
+        LOGGER.info(f'Computed Sx x Sy sizes : {len(self.Sy_range)} x {len(self.Sx_range)}')
+        LOGGER.info(f'Bz data matrix size    : {self.Bz_array.shape[0]} x {self.Bz_array.shape[1]}')
+        LOGGER.info('Bz data memory         : {:.4f} Mb'.format(self.Bz_array.nbytes / (1024 * 1024)))
 
         self.N_sensors = self.Nx_surf * self.Ny_surf
 
@@ -240,6 +240,7 @@ class MultipoleInversion(object):
         X_pos, Y_pos = np.meshgrid(self.Sx_range, self.Sy_range)
         self.scan_positions[:, :2] = np.stack((X_pos, Y_pos), axis=2).reshape(-1, 2)
         self.scan_positions[:, 2] *= self.Hz
+        LOGGER.info('Scan positions array memory: {:.4f} Mb'.format(self.scan_positions.nbytes / (1024 * 1024)))
 
     def generate_forward_matrix(self, optimization: _MethodOptions = 'numba'):
         """
@@ -270,6 +271,7 @@ class MultipoleInversion(object):
 
         # The total flux array according to the specified expansion limit
         self.Q = np.zeros(shape=(self.N_sensors, self._N_cols * self.N_particles))
+        LOGGER.info('Green matrix memory: {:.4f} Mb'.format(self.Q.nbytes / (1024 * 1024)))
 
         # print('pos array:', particle_positions.shape)
         t0 = time.time()
@@ -281,8 +283,8 @@ class MultipoleInversion(object):
                 if HASCUDA is False:
                     raise RuntimeError('The cuda method is not available. Stopping calculation')
 
-                # TODO: CHECK
-                verb = 1 if LOGGER.level == 20 else 0
+                # Verbose only if logger is NOTSET, DEBUG or INFO
+                verb = 1 if LOGGER.level <= 20 else 0
                 sus_cudalib.SHB_populate_matrix(self.particle_positions,
                                                 self.scan_positions,
                                                 self.Q,

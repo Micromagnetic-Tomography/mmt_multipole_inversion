@@ -188,9 +188,9 @@ if CUDA:
     # For other architectures: see https://en.wikipedia.org/wiki/CUDA
     #   For instance, a GTX 750 Ti has compute capability 5.0 so we use sm_50
     # If CUDA complains about gcc version being too new, specify an older version using the ccbin flag
-    com_args['nvcc'] = ['-arch=sm_75', '--fmad=false', '--ptxas-options=-v',
+    com_args['nvcc'] = ['-arch=sm_50', '--fmad=false', '--ptxas-options=-v',
                         '-c', '--compiler-options', "'-fPIC'", 
-                        # '-ccbin=/usr/bin/gcc-12'
+                        '-ccbin=/usr/bin/gcc-13'
                         ]
     extensions.append(
         Extension("mmt_multipole_inversion.susceptibility_modules.cuda.cudalib",
