@@ -130,7 +130,7 @@ class MultipoleInversion(object):
         self.expansion_limit = expansion_limit  # update def value
 
         expected_arrays = ['Bz_array', 'particle_positions']
-        self.Bz_array = np.empty(0)
+        # self.Bz_array = np.empty(0)
         self.particle_positions = None
 
         # Any other array in the NPZ file will be loaded here
@@ -191,9 +191,6 @@ class MultipoleInversion(object):
         # Instantiate the forward matrix
         self.Q = np.empty(0)
 
-        # Generate field mask array with True everywhere as default
-        self.fieldMask = np.ones_like(self.Bz_array).astype(bool)
-
     @property
     def expansion_limit(self):
         return self._expansion_limit
@@ -214,6 +211,24 @@ class MultipoleInversion(object):
         # Reset the Q matrix whose size depends on _N_cols
         self.Q = np.empty(0)
 
+
+    @property
+    def Bz_array(self):
+        return self._Bz_array
+
+    @Bz_array.setter
+    def Bz_array(self, Bz_array: np.ndarray):
+        """
+        """
+        self._Bz_array = Bz_array
+        LOGGER.info(f'Bz data matrix size    : {self._Bz_array.shape[0]} x {self._Bz_array.shape[1]}')
+        LOGGER.info('Bz data memory         : {:.4f} Mb'.format(self._Bz_array.nbytes / (1024 * 1024)))
+
+        # TODO: Problem here if Bz array was not specified::
+        # Generate field mask array with True everywhere as default
+        LOGGER.warning('Bz array set. Setting raw fieldMask array')
+        self.fieldMask = np.ones_like(self._Bz_array).astype(bool)
+
     def generate_measurement_mesh(self):
         """Generate coordinates for the measurement mesh
 
@@ -230,8 +245,6 @@ class MultipoleInversion(object):
 
         LOGGER.info('Scanning array sizes (row x col)')
         LOGGER.info(f'Computed Sx x Sy sizes : {len(self.Sy_range)} x {len(self.Sx_range)}')
-        LOGGER.info(f'Bz data matrix size    : {self.Bz_array.shape[0]} x {self.Bz_array.shape[1]}')
-        LOGGER.info('Bz data memory         : {:.4f} Mb'.format(self.Bz_array.nbytes / (1024 * 1024)))
 
         self.N_sensors = self.Nx_surf * self.Ny_surf
 
@@ -477,15 +490,15 @@ class MultipoleInversion(object):
 
         # Reshape Bz (without copy!) to pass it to the C/cuda/numba libraries
         # NOTE: This reshape of Bz_array assumes it is using C order in memory (default in np)
-        self.Bz_array.shape = (self.N_sensors,)  # Can also use -1
+        self._Bz_array.shape = (self.N_sensors,)  # Can also use -1
         if apply_field_mask:
             LOGGER.info('Using field mask from the self.fieldMask array. '
                         'Confirm that you are using the right mask by calling the generate_field_mask() method.')
             Qmatrix = self.Q[self.fieldMask.reshape(-1)]
-            Bzdata = self.Bz_array[self.fieldMask.reshape(-1)]
+            Bzdata = self._Bz_array[self.fieldMask.reshape(-1)]
         else:
             Qmatrix = self.Q
-            Bzdata = self.Bz_array
+            Bzdata = self._Bz_array
 
         if method == 'np_pinv':
             LOGGER.info('Using numpy.pinv for inversion')
@@ -520,7 +533,7 @@ class MultipoleInversion(object):
             self.inv_moments_std.shape = (self.N_particles, -1)
 
         # Assuming that Sx/Sy ranges correspond to the computed sizes for the scanning array
-        self.Bz_array.shape = (self.Sy_range.shape[0], -1)
+        self._Bz_array.shape = (self.Sy_range.shape[0], -1)
 
     def save_multipole_moments(self,
                                save_name: str = 'TIME_STAMP',
