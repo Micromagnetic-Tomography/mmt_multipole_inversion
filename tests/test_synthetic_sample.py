@@ -111,7 +111,7 @@ inv_area1_ums = minv.MultipoleInversion(BASE_DIR / "AREA1_UMS_METADICT.json",
                                         )
 
 inv_area1_ums.Bz_array = np.loadtxt(data_dir / 'Area1-90-fig2MMT.txt')
-inv_area1_ums.compute_inversion(rcond=1e-25, method='sp_pinv')
+inv_area1_ums.compute_inversion(rtol=1e-25, method='sp_pinv')
 
 mag_area1_ums = inv_area1_ums.inv_multipole_moments / inv_area1_ums.volumes[:, None]
 mag_area1_ums = np.sqrt(np.sum(mag_area1_ums[:, :3] ** 2, axis=1))
@@ -135,7 +135,7 @@ inv_area1_ums = minv.MultipoleInversion(BASE_DIR / "AREA1_UMS_METADICT.json",
 
 inv_area1_ums.Bz_array = np.loadtxt(data_dir / 'Area1-90-fig2MMT.txt')
 inv_area1_ums.sensor_dims = ()
-inv_area1_ums.compute_inversion(rcond=1e-25, method='sp_pinv')
+inv_area1_ums.compute_inversion(rtol=1e-25, method='sp_pinv')
 
 mag_area1_ums = inv_area1_ums.inv_multipole_moments / inv_area1_ums.volumes[:, None]
 mag_area1_ums = np.sqrt(np.sum(mag_area1_ums[:, :3] ** 2, axis=1))
