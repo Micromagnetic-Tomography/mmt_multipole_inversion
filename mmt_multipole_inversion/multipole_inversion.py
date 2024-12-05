@@ -506,7 +506,7 @@ class MultipoleInversion(object):
         if method == 'direct':
             LOGGER.info('Using direct inversion')
             self.inv_multipole_moments, res, rnk, s = slin.lstsq(
-                self.Q, Bz_Data, **method_kwargs)
+                self.Q, Bzdata, **method_kwargs)
             self.inv_multipole_moments.shape = (self.N_particles, self._N_cols)
             # Forward field
             self.inv_Bz_array = np.matmul(self.Q, self.inv_multipole_moments.reshape(-1))
