@@ -25,7 +25,7 @@ def fw_model_fun(sensor_dx=1e-6, sensor_dy=1e-6, sensor_Sx=20e-6, sensor_Sy=20e-
 
     # Check if save dir is empty (wont check for specific npz and json names)
     if not overwrite and any(TEST_SAVEDIR.iterdir()):
-        print(f'Save dir {TEST_SAVEDIR} not empty, skipping this function')
+        minv.LOGGER.warning(f'Save dir {TEST_SAVEDIR} not empty, skipping this function')
         return
 
     Hz = 1e-6         # Scan height in m

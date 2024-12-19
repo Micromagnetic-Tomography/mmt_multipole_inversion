@@ -31,11 +31,11 @@ __all__ = [
 class CustomFormatter(logging.Formatter):
     """Logging colored formatter, adapted from https://stackoverflow.com/a/56944256/3638629"""
 
-    grey = "\x1b[37;40m"
-    yellow = "\x1b[33;40m"
-    blue = "\x1b[34;40m"
-    red = "\x1b[31;40m"
-    bold_red = "\x1b[1;31;40m"
+    grey = "\x1b[37;49m"
+    yellow = "\x1b[33;49m"
+    blue = "\x1b[34;49m"
+    red = "\x1b[31;49m"
+    bold_red = "\x1b[1;31;49m"
     reset = "\x1b[0m"
 
     def __init__(self, fmt):
