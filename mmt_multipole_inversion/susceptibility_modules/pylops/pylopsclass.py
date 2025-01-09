@@ -3,13 +3,16 @@ import numpy as np
 import numba
 from numba import prange
 
+# scaling of problem
+µm = 1e6
+nT = 1e9
 
 # basic functions
 @numba.jit(nopython=True, parallel=True)
 def dipole_Bz_sus(xin, N_sensors, N_particles,
                   dip_r, pos_r, yout, n_col_stride):
     for i in prange(N_sensors):
-        dr = pos_r[i] - dip_r
+        dr = µm * (pos_r[i] - dip_r)
         x, y, z = dr[:, 0], dr[:, 1], dr[:, 2]
         z2 = z ** 2
 
@@ -29,7 +32,7 @@ def dipole_Bz_sus(xin, N_sensors, N_particles,
 def quadrupole_Bz_sus(xin, N_sensors, N_particles,
                       dip_r, pos_r, yout, n_col_stride):
     for i in prange(N_sensors):
-        dr = pos_r[i] - dip_r
+        dr = µm * (pos_r[i] - dip_r)
         x, y, z = dr[:, 0], dr[:, 1], dr[:, 2]
         x2, y2, z2 = x ** 2, y ** 2, z ** 2
 
@@ -56,7 +59,7 @@ def quadrupole_Bz_sus(xin, N_sensors, N_particles,
 def octupole_Bz_sus(xin, N_sensors, N_particles,
                     dip_r, pos_r, yout, n_col_stride):
     for i in prange(N_sensors):
-        dr = pos_r[i] - dip_r
+        dr = µm * (pos_r[i] - dip_r)
         x, y, z = dr[:, 0], dr[:, 1], dr[:, 2]
         x2, y2, z2 = x ** 2, y ** 2, z ** 2
 
@@ -88,7 +91,7 @@ def octupole_Bz_sus(xin, N_sensors, N_particles,
 @numba.jit(nopython=True, parallel=True)
 def dipole_Bz_sus_t(xin, dip_r, pos_r, yout, N_particles, _N_cols):
     for i in prange(N_particles):
-        dr = pos_r - dip_r[i]
+        dr = µm * (pos_r - dip_r[i])
         x, y, z = dr[:, 0], dr[:, 1], dr[:, 2]
         z2 = z ** 2
         r2 = np.sum(dr ** 2, axis=1)
@@ -104,7 +107,7 @@ def dipole_Bz_sus_t(xin, dip_r, pos_r, yout, N_particles, _N_cols):
 @numba.jit(nopython=True, parallel=True)
 def quadrupole_Bz_sus_t(xin, dip_r, pos_r, yout, N_particles, _N_cols):
     for i in prange(N_particles):
-        dr = pos_r - dip_r[i]
+        dr = µm * (pos_r - dip_r[i])
         x, y, z = dr[:, 0], dr[:, 1], dr[:, 2]
         x2, y2, z2 = x ** 2, y ** 2, z ** 2
         r2 = np.sum(dr ** 2, axis=1)
@@ -123,7 +126,7 @@ def quadrupole_Bz_sus_t(xin, dip_r, pos_r, yout, N_particles, _N_cols):
 @numba.jit(nopython=True, parallel=True)
 def octupole_Bz_sus_t(xin, dip_r, pos_r, yout, N_particles, _N_cols):
     for i in prange(N_particles):
-        dr = pos_r - dip_r[i]
+        dr = µm * (pos_r - dip_r[i])
         x, y, z = dr[:, 0], dr[:, 1], dr[:, 2]
         x2, y2, z2 = x ** 2, y ** 2, z ** 2
         r2 = np.sum(dr ** 2, axis=1)
@@ -191,7 +194,7 @@ class GreensMatrix(LinearOperator):
                      self.particle_positions, self.scan_positions, yout,
                      self._N_cols)
 
-        return yout
+        return yout * nT
 
     def _rmatvec(self, xin):
         # x is the data vector, output y is adjoint magnetic moment vector
@@ -200,4 +203,4 @@ class GreensMatrix(LinearOperator):
             for RFSus in self.rmatvecList:
                 RFSus(xin, self.particle_positions, self.scan_positions,
                       yout, self.N_particles, self._N_cols)
-        return yout
+        return yout * nT
