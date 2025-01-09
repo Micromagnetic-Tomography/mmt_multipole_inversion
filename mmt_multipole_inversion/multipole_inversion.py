@@ -331,7 +331,6 @@ class MultipoleInversion(object):
     def compute_inversion(self,
                           method: _InvMethodOps = 'sp_pinv',
                           sigma_field_noise: Optional[float] = None,
-                          pyl_regs: list = None,
                           initial_moments: Optional[np.ndarray] = None,
                           **method_kwargs
                           ):
@@ -360,16 +359,14 @@ class MultipoleInversion(object):
             stored in the `inv_moments_std` 2D array where every row has the
             results per grain. For details, see
             [F. Out et al. Geochemistry, Geophysics, Geosystems 23(4). 2022]
-        pyl_regs
-            Required parameter for pylops solvers. Defaults to None.
-            Provides optional additional regularization parameters.
         **method_kwargs
-            Extra parameters passed to Numpy or Scipy functions. For Numpy, the
+            Extra parameters passed to Numpy, Pylops, or Scipy functions. For Numpy, the
             tolerance can be set using `rcond` while for `Scipy` it is
             recommended to use `atol` and `rtol`. See their documentations for
             detailed information.
         """
         if method == 'pylops':
+            nT = 1e9
             if self.verbose:
                 print('Using the pylops library for an iterative inversion')
             scan_positions = np.ones((self.N_sensors, 3))
@@ -384,12 +381,23 @@ class MultipoleInversion(object):
             # self.inv_multipole_moments, info = pylinv(
             #     Dlop, self.Bz_array.flatten(), pyl_regs, show=self.verbose,
             #     **method_kwargs)
+            if not method_kwargs:
+                method_kwargs = dict(Regs=None, x0=None)
             (self.inv_multipole_moments, self.info1, self.info2,
              self.info3, self.info4) = pylinv2(
-                Dlop, self.Bz_array.flatten(), pyl_regs,
-                show=self.verbose, **method_kwargs)
+                Dlop, self.Bz_array.flatten() * nT, **method_kwargs)
 
+            # Back to Tesla units:
+            self.inv_Bz_array = Dlop.dot(self.inv_multipole_moments.flatten()) / nT
+            self.inv_Bz_array.shape = (self.Ny_surf, -1)
+            # Scale the magnetic moments back to Ampere * meter^X units:
+            µm = 1e-6
             self.inv_multipole_moments.shape = (self.N_particles, self._N_cols)
+            self.inv_multipole_moments[:, :3] *= µm ** 3
+            if self.expansion_limit in ['quadrupole', 'octupole']:
+                self.inv_multipole_moments[:, 3:8] *= µm ** 5
+            if self.expansion_limit in ['octupole']:
+                self.inv_multipole_moments[:, 8:15] *= µm ** 7
             # if info != 0:
             #     print(f'Inversion failed, errorcode: {info}')
 
