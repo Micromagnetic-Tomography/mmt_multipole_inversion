@@ -538,6 +538,8 @@ class MultipoleInversion(object):
             else:
                 raise ValueError(f'Method {method} not implemented')
 
+            LOGGER.info('Finished inversion')  # Useful to check calc timing
+
             self.inv_multipole_moments = np.dot(self.IQ, Bzdata)
             self.inv_multipole_moments.shape = (self.N_particles, self._N_cols)
 
