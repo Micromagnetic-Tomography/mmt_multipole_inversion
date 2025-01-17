@@ -129,25 +129,11 @@ class MultipoleInversion(object):
         self._expansion_limit = 'dipole'  # set default value
         self.expansion_limit = expansion_limit  # update def value
 
-        expected_arrays = ['Bz_array', 'particle_positions']
-        # self.Bz_array = np.empty(0)
-        self.particle_positions = None
-
-        # Any other array in the NPZ file will be loaded here
-        if sample_arrays:
-            data = np.load(sample_arrays)
-            for key, value in data.items():
-                setattr(self, key, value)
-
-            for key in expected_arrays:
-                if key not in data.keys():
-                    LOGGER.info(f'*{key}* array required for calculations. Set manually.')
-
         # Optional sequence to set the origin of scan positions
         # self.scan_origin = (0.0, 0.0)
 
         # TODO: Wrap all key dict analysis in function??
-        #
+        # TODO: Add option to use dict instead of json
         # Load metadata
         with open(sample_config_file, 'r') as f:
             metadict = json.load(f)
@@ -170,23 +156,46 @@ class MultipoleInversion(object):
                        }
 
         for k, v in multInVDict.items():
-            if isinstance(v, tuple):
-                setattr(self, v[0], metadict.get(k, v[1]))
+            if k in metadict.keys():
+                # need this for keys with a default value like sensor dimensions:
+                attr = v[0] if isinstance(v, tuple) else v
+                setattr(self, attr, metadict[k])
             else:
-                setattr(self, v, metadict.get(k))
-
-            if k not in metadict.keys():
-                LOGGER.info(f'Parameter {k} not found in json file')
+                msg = (f'Parameter "{k}" not found in json file. ')
                 # For dict keys in multInVDict that have a default value: inform use of def value
                 if isinstance(v, tuple):
-                    LOGGER.info(f'Setting {k} value to {v[1]}')
+                    LOGGER.warning(msg + f'Setting class attribute {v[0]} to default {v[1]}')
+                    setattr(self, v[0], v[1])
+                else:
+                    LOGGER.warning(msg + f'Set a value for it in the json file.')
 
         for k in metadict.keys():
             if k not in multInVDict.keys():
-                print(f'Not using parameter {k} in json file')
                 LOGGER.info(f'Not using parameter {k} in json file')
 
+        # Information/checking against sample-sensor distance sign
+        if self.Hz < 0:
+            LOGGER.warning('The calculations use a right-hand coordinate system, where z=0 '
+                           'is expected as the sample surface. Check that the z-positions '
+                           'of the grains are defined accordingly: below zero or the scan height.')
+
         self.generate_measurement_mesh()
+
+        # We set the arrays from the NPZ array here, to check against the
+        # dimensions of the generated measurement mesh
+        expected_arrays = ['Bz_array', 'particle_positions']
+        # self.Bz_array = np.empty(0)
+        self.particle_positions = None
+
+        # Any other array in the NPZ file will be loaded here
+        if sample_arrays:
+            data = np.load(sample_arrays)
+            for key, value in data.items():
+                setattr(self, key, value)
+
+            for key in expected_arrays:
+                if key not in data.keys():
+                    LOGGER.info(f'*{key}* array required for calculations. Set manually.')
 
         # Instantiate the forward matrix
         self.Q = np.empty(0)
@@ -221,8 +230,12 @@ class MultipoleInversion(object):
         """
         """
         self._Bz_array = Bz_array
-        LOGGER.info(f'Bz data matrix size    : {self._Bz_array.shape[0]} x {self._Bz_array.shape[1]}')
+        LOGGER.info(f'Bz data array size     : {self._Bz_array.shape[0]} x {self._Bz_array.shape[1]}')
         LOGGER.info('Bz data memory         : {:.4f} Mb'.format(self._Bz_array.nbytes / (1024 * 1024)))
+
+        # Check against size of generated mesh
+        if self._Bz_array.shape[1] != self.Nx_surf or self._Bz_array.shape[0] != self.Ny_surf:
+            LOGGER.error('Bz array dimensions do not match with measurement mesh dimensions. Inversions will fail')
 
         # TODO: Problem here if Bz array was not specified::
         # Generate field mask array with True everywhere as default
