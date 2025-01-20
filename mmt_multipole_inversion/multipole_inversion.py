@@ -122,6 +122,8 @@ class MultipoleInversion(object):
 
         """
 
+        LOGGER.info('🧲 Initialized new MultipoleInversion simulation')
+
         # Set the module from which to find the Bz susceptibility functions,
         # which is specified using the sus_functions_module argument
         self.sus_mod = getattr(sus_mods, sus_functions_module)
@@ -167,7 +169,7 @@ class MultipoleInversion(object):
                     LOGGER.warning(msg + f'Setting class attribute {v[0]} to default {v[1]}')
                     setattr(self, v[0], v[1])
                 else:
-                    LOGGER.warning(msg + f'Set a value for it in the json file.')
+                    LOGGER.warning(msg + 'Set a value for it in the json file.')
 
         for k in metadict.keys():
             if k not in multInVDict.keys():

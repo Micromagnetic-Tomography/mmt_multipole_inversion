@@ -2,6 +2,8 @@ from .multipole_inversion import MultipoleInversion
 from .magnetic_sample import MagneticSample
 import logging
 import sys
+from datetime import datetime
+
 
 from .__about__ import (
     __author__,
@@ -58,11 +60,15 @@ class CustomFormatter(logging.Formatter):
 # Setup root logger! Default basicConfig has only a StreamHandler
 # The root logger should not be modified. Submodules should have their own unique name. They inherit root logger config
 # Access to root logger to add additional Handlers should be done with: looging.getLogger('')
-# TODO: add a file handler to save simulation messages to logfile
 FORMAT = '%(asctime)s | %(levelname)8s | %(module)s :: %(message)s'
 handler_st = logging.StreamHandler(sys.stdout)
 handler_st.setFormatter(CustomFormatter(FORMAT))
-logging.basicConfig(format=FORMAT, datefmt='%d-%m-%Y %H:%M:%S', handlers=[handler_st])
+
+# File handler to register log:
+dt_str = datetime.now().strftime("%d%m%Y_%H%M%S")
+handler_io = logging.FileHandler(f'log_{dt_str}', mode='a', encoding='utf-8')
+
+logging.basicConfig(format=FORMAT, datefmt='%d-%m-%Y %H:%M:%S', handlers=[handler_st, handler_io])
 
 # Set default level of this module's logger and children loggers
 LOGGER = logging.getLogger(__name__)
