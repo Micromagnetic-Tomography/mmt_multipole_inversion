@@ -66,7 +66,7 @@ handler_st.setFormatter(CustomFormatter(FORMAT))
 
 # File handler to register log:
 dt_str = datetime.now().strftime("%d%m%Y_%H%M%S")
-handler_io = logging.FileHandler(f'log_{dt_str}', mode='a', encoding='utf-8')
+handler_io = logging.FileHandler(f'mmt_multipole_inversion_log_{dt_str}', mode='a', encoding='utf-8')
 
 logging.basicConfig(format=FORMAT, datefmt='%d-%m-%Y %H:%M:%S', handlers=[handler_st, handler_io])
 
