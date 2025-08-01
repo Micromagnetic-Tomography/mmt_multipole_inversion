@@ -313,12 +313,21 @@ class MultipoleInversion(object):
 
                 # Verbose only if logger is NOTSET, DEBUG or INFO
                 verb = 1 if LOGGER.level <= 20 else 0
-                sus_cudalib.SHB_populate_matrix(self.particle_positions,
-                                                self.scan_positions,
-                                                self.Q,
-                                                self.N_particles, self.N_sensors,
-                                                mp_order[self.expansion_limit],
-                                                verb)
+                errorInt = sus_cudalib.SHB_populate_matrix(
+                    self.particle_positions,
+                    self.scan_positions,
+                    self.Q,
+                    self.N_particles, self.N_sensors,
+                    mp_order[self.expansion_limit],
+                    verb)
+                if errorInt != 0:
+                    errMsg = f'Cuda code exited with error type {errorInt}. See: https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html'
+                    LOGGER.error(errMsg)
+                    raise RuntimeError(errMsg)
+                    # LOGGER.exception(f'Cuda code exited with error type {errorInt}')
+                    # raise RuntimeError(f'Cuda calculation exited with cuda error type {errorInt}')
+
+
 
         # For all the particles, whose positions are stored in the pos array
         # (N_particles x 3), compute the dipole (3 terms), quadrupole (5 terms)
