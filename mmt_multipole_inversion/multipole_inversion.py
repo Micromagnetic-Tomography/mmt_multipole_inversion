@@ -805,4 +805,3 @@ def dipole_field(dip_r, dip_m, pos_r):
     f = 3e-7 * sp / (rho2 * rho2 * rho)
     g = -1e-7 / (rho2 * rho)
     return([f * r[k] + g * dip_m[k] for k in range(3)])
->>>>>>> master

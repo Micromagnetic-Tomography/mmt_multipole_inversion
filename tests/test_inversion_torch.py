@@ -38,7 +38,7 @@ def fw_model_fun(sensor_dx=1e-6, sensor_dy=1e-6, overwrite=False, SAVEDIR="TEST_
         Lx,
         Ly,
         Lz,
-        scan_origin=(0e-6, 0e-6),
+        sensor_origin=(0e-6, 0e-6),
         bz_field_module="spherical_harmonics_basis",
     )
 
