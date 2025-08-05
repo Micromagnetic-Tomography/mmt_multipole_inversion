@@ -527,7 +527,7 @@ class MultipoleInversion(object):
             scan_positions[:, 2] *= self.Hz
             Dlop = GreensMatrix(self.N_sensors, self._N_cols, self.N_particles,
                                 self.particle_positions, self.expansion_limit,
-                                scan_positions, self.verbose)
+                                scan_positions, 1)
 
             # self.inv_multipole_moments, info = pylinv(
             #     Dlop, self.Bz_array.flatten(), pyl_regs, show=self.verbose,
@@ -627,13 +627,13 @@ class MultipoleInversion(object):
             if initial_moments is None:
                 rng = np.random.default_rng(42)
                 x0 = (2 * rng.random(self.N_particles * self._N_cols) - 1.).reshape(-1, self._N_cols)
-                x0[:, :3] /= np.linalg.norm(x0[:, :3], axis=1)
+                x0[:, :3] /= np.linalg.norm(x0[:, :3], axis=1)[:, np.newaxis]
                 x0[:, :3] *= 1e4
                 if self.expansion_limit in ['quadrupole', 'octupole']:
-                    x0[:, 3:8] /= np.linalg.norm(x0[:, 3:8], axis=1)
+                    x0[:, 3:8] /= np.linalg.norm(x0[:, 3:8], axis=1)[:, np.newaxis]
                     x0[:, 3:8] *= 1e-8
                 if self.expansion_limit in ['octupole']:
-                    x0[:, 8:15] /= np.linalg.norm(x0[:, 8:15], axis=1)
+                    x0[:, 8:15] /= np.linalg.norm(x0[:, 8:15], axis=1)[:, np.newaxis]
                     x0[:, 8:15] *= 1e-22
                 x0.shape = (-1)
             else:
