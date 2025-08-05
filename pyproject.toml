@@ -27,7 +27,7 @@ include = [
 
 [tool.poetry.build]
 generate-setup-file = false
-script = "build.py"
+script = "build_extension.py"
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.14"
@@ -54,5 +54,5 @@ jupytext = "^1.14.1"
 
 
 [build-system]
-requires = ["setuptools", "poetry-core>=1.8.0", "cython>3.0.0", "numpy>=1.23"]
+requires = ["setuptools", "poetry-core>=1.8.0", "cython>=3.0.0", "numpy>=2.0.0"]
 build-backend = "poetry.core.masonry.api"

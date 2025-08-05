@@ -20,7 +20,7 @@ def test_fw_model_and_bz_field():
 
     # Initialise the dipole class
     sample = msp.MagneticSample(Hz, Sx, Sy, Sdx, Sdy, Lx, Ly, Lz,
-                                scan_origin=(0.5e-6, 0.5e-6),
+                                sensor_origin=(0.5e-6, 0.5e-6),
                                 bz_field_module='spherical_harmonics_basis'
                                 )
 

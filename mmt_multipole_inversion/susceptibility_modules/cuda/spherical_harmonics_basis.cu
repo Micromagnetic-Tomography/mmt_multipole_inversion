@@ -3,6 +3,19 @@
 #include <math.h>
 #include <stdio.h>
 
+#define gpuErrchk(ans,errCodeInt) { gpuAssert((ans), (errCodeInt), __FILE__, __LINE__); }
+inline void gpuAssert(cudaError_t code, int *errCodeInt, const char *file, int line) {
+// inline int gpuAssert(cudaError_t code, int *errCodeInt, const char *file, int line, bool abort = true) {
+    if (code != cudaSuccess) {
+        *errCodeInt = static_cast<int>(code);  // Convert cudaError_t to integer
+        fprintf(stderr, "GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
+        // if (abort) 
+        //     return(code);
+    } else {
+        *errCodeInt = 0;
+    }
+}
+
 
 // Define magnetic constant in GPU
 // __device__ double Cm = 1e-7;
@@ -111,14 +124,15 @@ __global__ void SHB_pop_matrix(double * Q, double * r_sources, double * r_sensor
    multipole_order
        1 -> dipole, 2 -> quadrupole , ...
  */
-void SHB_populate_matrix_cuda(double * r_sources,
-                              double * r_sensors,
-                              double * Q,
-                              unsigned long long Nsources,
-                              unsigned long long Nsensors,
-                              int multipole_order,
-                              int verbose
-                              ) {
+int SHB_populate_matrix_cuda(double * r_sources,
+                             double * r_sensors,
+                             double * Q,
+                             unsigned long long Nsources,
+                             unsigned long long Nsensors,
+                             int multipole_order,
+                             int verbose
+                             ) {
+    int errCheck = 0;
 
     // Total number of multipole values
     int n_multipoles = multipole_order * (multipole_order + 2);
@@ -135,12 +149,15 @@ void SHB_populate_matrix_cuda(double * r_sources,
     // cudaMalloc((void**)&Q_dev, Q_bytes);
 
     double *r_sources_dev;
-    cudaMalloc((void**)&r_sources_dev, sizeof(double) * 3 * Nsources);
+    gpuErrchk(cudaMalloc((void**)&r_sources_dev, sizeof(double) * 3 * Nsources), &errCheck);
+    if (errCheck != 0) return errCheck;
+
     // Copy cuboids array from the host to the GPU
     cudaMemcpy(r_sources_dev, r_sources, sizeof(double) * 3 * Nsources, cudaMemcpyHostToDevice);
 
     double *r_sensors_dev;
-    cudaMalloc((void**)&r_sensors_dev, sizeof(double) * 3 * Nsensors);
+    gpuErrchk(cudaMalloc((void**)&r_sensors_dev, sizeof(double) * 3 * Nsensors), &errCheck);
+    if (errCheck != 0) return errCheck;
     // Copy cuboids array from the host to the GPU
     cudaMemcpy(r_sensors_dev, r_sensors, sizeof(double) * 3 * Nsensors, cudaMemcpyHostToDevice);
 
@@ -204,14 +221,16 @@ void SHB_populate_matrix_cuda(double * r_sources,
     }
 
     // Allocate G matrix
-    cudaMalloc((void**)&Q_dev, Q_bytes);
+    gpuErrchk(cudaMalloc((void**)&Q_dev, Q_bytes), &errCheck);
+    if (errCheck != 0) return errCheck;
 
     // Populate matrix in GPU:
     SHB_pop_matrix<<<gridSize, blockSize>>>(Q_dev, r_sources_dev, r_sensors_dev,
                                             Nsources, Nsensors,
                                             multipole_order, n_multipoles,
                                             verbose);
-    cudaDeviceSynchronize();
+    gpuErrchk(cudaDeviceSynchronize(), &errCheck);
+    if (errCheck != 0) return errCheck;
 
     // Copy Q from the GPU to the host
     cudaMemcpy(Q, Q_dev, Q_bytes, cudaMemcpyDeviceToHost);
@@ -222,5 +241,9 @@ void SHB_populate_matrix_cuda(double * r_sources,
     cudaFree(Q_dev);
     cudaFree(r_sources_dev);
     cudaFree(r_sensors_dev);
+
+    printf("Erroooooooooor = %d\n", errCheck);
+
+    return 0;
 
 } // main function

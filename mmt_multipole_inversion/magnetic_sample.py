@@ -102,7 +102,7 @@ class MagneticSample(object):
     # TODO: pass cfg file or json file with specifications
     # Can define a class method (@classmethod) to overload the __init__ func
     def __init__(self, Hz, Sx, Sy, Sdx, Sdy, Lx, Ly, Lz,
-                 scan_origin=(0.0, 0.0),
+                 sensor_origin=(0.0, 0.0),
                  bz_field_module='spherical_harmonics_basis'
                  ):
         """
@@ -121,8 +121,9 @@ class MagneticSample(object):
             Sample plane dimensions in m
         Lz
             Sample thickness in m
-        scan_origin
-            2-sequence to specify the origin of the scan grid
+        sensor_origin
+            2-sequence to specify the origin of the scan grid by the lower
+            left sensor position
         bz_field_module
             Specify the basis to generate the Bz multipole fields
 
@@ -141,8 +142,9 @@ class MagneticSample(object):
         self.Ly = Ly
         self.Lz = Lz
 
-        # Optional sequence to set the origin of scan positions
-        self.scan_origin = scan_origin
+        # Optional sequence to set the origin of scan-sensor positions
+        self.sensor_origin_x = sensor_origin[0]
+        self.sensor_origin_y = sensor_origin[1]
 
         # TODO: time stamps replaced by seed number
         ts = time.time()
@@ -158,7 +160,8 @@ class MagneticSample(object):
         self._metadict["Scan x-step Sdx"] = 'Sdx'
         self._metadict["Scan y-step Sdy"] = 'Sdy'
         self._metadict["Time stamp"] = 'time_stamp'
-        self._metadict["Scan origin"] = 'scan_origin'
+        self._metadict["Sensor origin x"] = 'sensor_origin_x'
+        self._metadict["Sensor origin y"] = 'sensor_origin_y'
         # self._metadict["Scan origin x"] = 'scan_origin[0]'
         # self._metadict["Scan origin y"] = self.scan_origin[1]
         self._metadict["Number of particles"] = 'N_particles'
@@ -254,7 +257,8 @@ class MagneticSample(object):
                                       dipole_moments,
                                       volumes,
                                       quadrupole_moments=None,
-                                      octupole_moments=None
+                                      octupole_moments=None,
+                                      identifier=None,
                                       ):
         """
         Generate particles in the sample from arrays specified manually
@@ -271,6 +275,8 @@ class MagneticSample(object):
             N x 5 array with quadrupole moments
         octupole_moments
             N x 7 array with octupole moments
+        identifier
+            N array with integers representing particles
 
         Notes
         -----
@@ -287,6 +293,11 @@ class MagneticSample(object):
         self.volumes = volumes
 
         self.N_particles = len(positions)
+        # identifying particles to compare results
+        if isinstance(identifier, np.ndarray):
+            self.identifier = identifier
+        else:
+            self.identifier = np.arange(1, len(positions) + 1)
 
     def generate_measurement_mesh(self):
         """
@@ -297,8 +308,8 @@ class MagneticSample(object):
         """
 
         # Generate measurement mesh (maybe replace 0.0 by a shifted origin)
-        self.Sx_range = self.scan_origin[0] + np.arange(round(self.Sx / self.Sdx)) * self.Sdx
-        self.Sy_range = self.scan_origin[1] + np.arange(round(self.Sy / self.Sdy)) * self.Sdy
+        self.Sx_range = self.sensor_origin_x + np.arange(round(self.Sx / self.Sdx)) * self.Sdx
+        self.Sy_range = self.sensor_origin_y + np.arange(round(self.Sy / self.Sdy)) * self.Sdy
         Bz_grid = np.zeros((len(self.Sy_range), len(self.Sx_range)))
 
         pos = np.ones((Bz_grid.shape[0] * Bz_grid.shape[1], 3))
@@ -341,7 +352,8 @@ class MagneticSample(object):
     def save_data(self, filename='TIME_STAMP', basedir='', noised_array=False):
         """
         Save the system properties as a `json` file and relevant arrays in a
-        `npz` file: Bz_array, particle_positions, magnetization and volumes.
+        `npz` file: Bz_array, particle_positions, magnetization, volumes,
+        and identifiers.
 
         Parameters
         ----------
@@ -373,7 +385,8 @@ class MagneticSample(object):
                  Bz_array=Bz_data,
                  particle_positions=self.dipole_positions,
                  dipole_moments=self.dipole_moments,
-                 volumes=self.volumes)
+                 volumes=self.volumes,
+                 identifier=self.identifier)
 
         # # Will leave this but if we only use Python this should be deprecated:
         # np.savetxt("Bz_array" + st, self.Bz_array, delimiter=", ", fmt='%.8e')
