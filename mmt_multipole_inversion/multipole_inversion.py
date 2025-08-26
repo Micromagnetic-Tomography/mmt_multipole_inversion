@@ -39,7 +39,7 @@ LOGGER = logging.getLogger(__name__)
 # Import pylops and linearoperator
 import pylops
 # pylinv = pylops.optimization.leastsquares.normal_equations_inversion
-pylinv2 = pylops.optimization.leastsquares.regularized_inversion
+import pylops.optimization.leastsquares as pylinv2
 from .susceptibility_modules.pylops.pylopsclass import GreensMatrix
 
 import torch
@@ -534,9 +534,10 @@ class MultipoleInversion(object):
             #     **method_kwargs)
             if not method_kwargs:
                 method_kwargs = dict(Regs=None, x0=None)
+
             (self.inv_multipole_moments, self.info1, self.info2,
-             self.info3, self.info4) = pylinv2(
-                Dlop, self.Bz_array.flatten() * nT, **method_kwargs)
+             self.info3, self.info4) = pylinv2.regularized_inversion(
+                Op=Dlop, y=self.Bz_array.flatten() * nT, **method_kwargs)
 
             # Back to Tesla units:
             self.inv_Bz_array = Dlop.dot(self.inv_multipole_moments.flatten()) / nT

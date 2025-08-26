@@ -73,8 +73,10 @@ def test_inversion_single_dipole_pylops(limit):
         sus_functions_module="spherical_harmonics_basis",
     )
     inv_model.generate_measurement_mesh()
-    inv_model.compute_inversion(method="pylops")
-    # inv_model.compute_inversion(method='minimize_bfgs')
+    inv_model.compute_inversion(method="pylops",
+                                Regs=None, atol=1e-8, btol=1e-8, show=True,
+                                # x0=np.ones(8)
+                                )
     print(inv_model.Q)
 
     Ms = 1e5
@@ -108,12 +110,13 @@ def test_inversion_single_dipole_pylops(limit):
     axs[0].imshow(nT * inv_model.inv_Bz_array, origin="lower", cmap="RdYlBu", vmin=-lim, vmax=lim)
     axs[1].imshow(nT * inv_model.Bz_array, origin="lower", cmap="RdYlBu", vmin=-lim, vmax=lim)
     axs[1].set_title("Original")
-    plt.show()
+    plt.savefig(f'inversion_single_dipole_pylops_{limit}_result.png',
+                bbox_inches='tight')
 
 
 if __name__ == "__main__":
     fw_model_fun(overwrite=True)
 
-    # test_inversion_single_dipole_torch(limit='dipole')
+    # test_inversion_single_dipole_pylops(limit='dipole')
     test_inversion_single_dipole_pylops(limit="quadrupole")
-    # test_inversion_single_dipole_torch(limit='octupole')
+    # test_inversion_single_dipole_pylops(limit='octupole')
