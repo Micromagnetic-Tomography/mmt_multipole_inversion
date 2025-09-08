@@ -1,4 +1,5 @@
 import numpy as np
+import numpy.typing as npt
 # import math
 import matplotlib.pyplot as plt
 import time
@@ -13,7 +14,9 @@ from . import magnetic_sample_modules as ms_mods
 
 
 # TODO: can be defined as static method
-def dipole_field(dip_r, dip_m, pos_r):
+def dipole_field(dip_r: npt.NDArray[np.float64],
+                 dip_m: npt.NDArray[np.float64],
+                 pos_r: npt.NDArray[np.float64]):
     """
     Compute the dipole field at the `pos_r` position(s), from a group of `N`
     particles located at the `dip_r` dipole_positions, and which have magnetic
@@ -47,7 +50,7 @@ def dipole_field(dip_r, dip_m, pos_r):
     return np.einsum('i,ij->ij', f, r) + np.einsum('i,ij->ij', g, dip_m)
 
 
-def ran_sphere(n, ran_generator):
+def ran_sphere(n: int, ran_generator: np.random.RandomState):
     """Random number generator
 
     Parameters
@@ -101,9 +104,10 @@ class MagneticSample(object):
 
     # TODO: pass cfg file or json file with specifications
     # Can define a class method (@classmethod) to overload the __init__ func
-    def __init__(self, Hz, Sx, Sy, Sdx, Sdy, Lx, Ly, Lz,
-                 sensor_origin=(0.0, 0.0),
-                 bz_field_module='spherical_harmonics_basis'
+    def __init__(self, Hz: float, Sx:float, Sy: float, Sdx: float, Sdy:float,
+                 Lx: float, Ly: float, Lz: float,
+                 sensor_origin: tuple[float, float] = (0.0, 0.0),
+                 bz_field_module: str = 'spherical_harmonics_basis'
                  ):
         """
         Constructor for the sample generator class. The arguments are necessary
@@ -190,9 +194,14 @@ class MagneticSample(object):
                 metadict[k] = getattr(self, self._metadict[k])
         return metadict
 
-    def generate_random_particles(self, N_particles=100, Ms=4.8e5, seed=42,
-                                  rmin=[0.1, 0.1, 0.1],
-                                  rmax=[0.9, 0.9, 0.9]):
+    def generate_random_particles(self,
+                                  N_particles: int = 100,
+                                  Ms: float = 4.8e5,
+                                  seed: int = 42,
+                                  rmin: list[float] = [0.1, 0.1, 0.1],
+                                  rmax: list[float] = [0.9, 0.9, 0.9],
+                                  identifier: list[int] | None = None,
+                                  ):
         """
         Generate a sample of dipole particles randomly distributed across the
         sample region. The dipole moments of the particles are randomly
@@ -215,8 +224,10 @@ class MagneticSample(object):
                 rmin = [0.1, 0.1, 0.7]
                 rmax = [0.9, 0.9, 0.9]
 
-            This means particle positions in the x-direction will vary between
-            0.1 and 0.9 of Lx, and so on.
+            This means particle positions in the x- and y-directions will vary between
+            0.1 and 0.9 of Lx, and in the z-direction between 0.7*Lz and 0.9*Lz.
+        identifier
+            N array with integers representing particles
         """
 
         rstate = np.random.RandomState(seed)
@@ -249,16 +260,21 @@ class MagneticSample(object):
         #                        Ms * volumes * mdir[:, 2],
         #                        ))
         # Same but shorter: multiply 1D volumes array to every column of mdir
-        self.dipole_moments = self.Ms * np.einsum('i,ij->ij',
-                                                  self.volumes, mdir)
+        self.dipole_moments = self.Ms * np.einsum('i,ij->ij', self.volumes, mdir)
+
+        # Identifying particles to compare results
+        if isinstance(identifier, np.ndarray):
+            self.identifier = identifier
+        else:
+            self.identifier = np.arange(1, N_particles + 1)
 
     def generate_particles_from_array(self,
-                                      positions,
-                                      dipole_moments,
-                                      volumes,
-                                      quadrupole_moments=None,
-                                      octupole_moments=None,
-                                      identifier=None,
+                                      positions: list[list[float]],
+                                      dipole_moments: list[list[float]],
+                                      volumes: list[float],
+                                      quadrupole_moments: list[float] | None = None,
+                                      octupole_moments: list[float] | None = None,
+                                      identifier: list[int] | None = None,
                                       ):
         """
         Generate particles in the sample from arrays specified manually
@@ -293,7 +309,8 @@ class MagneticSample(object):
         self.volumes = volumes
 
         self.N_particles = len(positions)
-        # identifying particles to compare results
+
+        # Identifying particles to compare results
         if isinstance(identifier, np.ndarray):
             self.identifier = identifier
         else:
@@ -335,21 +352,21 @@ class MagneticSample(object):
 
         self.Bz_array = Bz_grid
 
-    def generate_noised_Bz_array(self, std_dev, seed=4242):
+    def generate_noised_Bz_array(self, std_dev: float, seed: int | np.random.RandomState = 4242):
         """
         Add uncorrelated noise to the magnetic flux (Bz array). The new
-        array is stored in self.Bz_array_noised
-        Update the seed if necessar.
-        For the seed a random number generator can be passed instead of an int.
+        array is stored in `self.Bz_array_noised`.
+        The seed is either an integer or a random number generator.
+        Noise is added from a Gaussian distribution with a given `std_dev` standard deviation.
         """
         if type(seed) == np.random.mtrand.RandomState:
             rstate = seed
         else:
-            rstate = np.random.RandomState(seed)
+            rstate = np.random.RandomState(seed)  # type: ignore
         noise = rstate.normal(loc=0.0, scale=std_dev, size=self.Bz_array.shape)
         self.Bz_array_noised = np.copy(self.Bz_array) + noise
 
-    def save_data(self, filename='TIME_STAMP', basedir='', noised_array=False):
+    def save_data(self, filename: str = 'TIME_STAMP', basedir: str = '', noised_array: bool = False):
         """
         Save the system properties as a `json` file and relevant arrays in a
         `npz` file: Bz_array, particle_positions, magnetization, volumes,
