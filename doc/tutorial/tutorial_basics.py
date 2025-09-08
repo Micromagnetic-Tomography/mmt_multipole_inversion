@@ -420,6 +420,7 @@ sample.save_data(filename='quadrupole_x-orientation')
 # %%
 qinv = minv.MultipoleInversion('./MetaDict_quadrupole_x-orientation.json',
                                './MagneticSample_quadrupole_x-orientation.npz',
+                               expansion_limit='quadrupole',
                                sus_functions_module='maxwell_cartesian_polynomials')
 qinv.compute_inversion(method='sp_pinv2')
 
@@ -480,6 +481,7 @@ sample.save_data(filename='quadrupole_xy-orientation')
 # %%
 qinv = minv.MultipoleInversion('./MetaDict_quadrupole_xy-orientation.json',
                                './MagneticSample_quadrupole_xy-orientation.npz',
+                               sus_functions_module='maxwell_cartesian_polynomials',
                                expansion_limit='quadrupole')
 qinv.compute_inversion(method='sp_pinv2')
 
