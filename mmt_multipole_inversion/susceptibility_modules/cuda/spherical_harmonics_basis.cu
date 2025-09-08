@@ -242,8 +242,6 @@ int SHB_populate_matrix_cuda(double * r_sources,
     cudaFree(r_sources_dev);
     cudaFree(r_sensors_dev);
 
-    printf("Erroooooooooor = %d\n", errCheck);
-
     return 0;
 
 } // main function
