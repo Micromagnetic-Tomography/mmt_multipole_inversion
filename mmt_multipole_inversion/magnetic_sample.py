@@ -29,25 +29,30 @@ def dipole_field(dip_r: npt.NDArray[np.float64],
     dip_m
         N x 3 array with dipole moments (Am^2)
     pos_r
-        1 x 3 array (m)
+        M x 3 array (m)
 
     Returns
 
     dipole_field as N x 3 array, in Tesla units
     """
 
-    r = pos_r - dip_r
-    x, y, z = r[:, 0], r[:, 1], r[:, 2]
+    Btot = np.zeros_like(pos_r)
+    # Iterate for every dipole:
+    for row_i in np.arange(dip_m.shape[0]):
+        r = pos_r - dip_r[row_i]
+        x, y, z = r[:, 0], r[:, 1], r[:, 2]
 
-    rho2 = np.sum(r ** 2, axis=1)
-    rho = np.sqrt(rho2)
+        rho2 = np.sum(r ** 2, axis=1)
+        rho = np.sqrt(rho2)
 
-    sp = dip_m[:, 0] * x + dip_m[:, 1] * y + dip_m[:, 2] * z
-    f = 3e-7 * sp / (rho2 * rho2 * rho)
-    g = -1e-7 / (rho2 * rho)
+        dp = dip_m[row_i]
+        sp = dp[0] * x + dp[1] * y + dp[2] * z
+        f = 3e-7 * sp / (rho2 * rho2 * rho)
+        g = -1e-7 / (rho2 * rho)
 
-    # return([f * r[k] + g * dip_m[k] for k in range(3)])
-    return np.einsum('i,ij->ij', f, r) + np.einsum('i,ij->ij', g, dip_m)
+        Btot[:, :] += np.einsum('i,ij->ij', f, r) + np.einsum('i,j->ij', g, dp)
+
+    return Btot
 
 
 def ran_sphere(n: int, ran_generator: np.random.RandomState):
